@@ -1,5 +1,6 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
+#include "opencv2/calib3d.hpp"
 
 
 #include "opencv2/xfeatures2d.hpp"
@@ -18,9 +19,9 @@ using namespace cv::xfeatures2d;
 
 /// Global variables
 cv::Mat src[4], src_gray[4];
+float k[3][3] = {{1077.9,0,594.0},{0,1077.9,393.3},{0,0,1}};
+cv::Mat K(3,3,CV_32FC1,k); //Camera Matrix
 
-int thresh = 200;
-int max_thresh = 255;
 const int num_pic = 2;
 
 const char* source_window = "Source image";
@@ -30,8 +31,6 @@ const char* matches_window = "Good Matches";
 const float rows = 1200;
 const float cols = 1600;
 
-const float pano_rows = 1800;
-const float pano_cols = 4800;
 
 const float offset_rows = 300;
 const float offset_cols = 1600;
@@ -51,6 +50,9 @@ cv::Mat board_coord = m_tmp.t();
 /// Function header
 void siftDetector( int, void* );
 void goodMatches(cv::Mat descriptor1, cv::Mat descriptor2,std::vector<DMatch>* good_matches);
+vector<Point2f>  normCoord(vector<cv::KeyPoint> keypoints);
+cv::Mat findE(vector<cv::KeyPoint> keypoints1,vector<cv::KeyPoint> keypoints2,vector<DMatch> good_matches);
+
 cv::Mat buildA(std::vector<KeyPoint> keypoint_1, std::vector<KeyPoint> keypoint_2, std::vector<DMatch> good_matches);
 cv::Mat buildCoord(int x_min, int x_max, int y_min, int y_max);
 cv::Mat coordTransX2Xprime(cv::Mat x,cv::Mat H); // H X2Xprime H.inv() Xprime2X
@@ -89,9 +91,10 @@ int main( int, char** argv )
  */
 void siftDetector( int, void* )
 {
-    cv::Ptr<Feature2D> f2d = xfeatures2d::SIFT::create(20,3,0.04,10,1.6);
+    cv::Ptr<Feature2D> f2d = xfeatures2d::SIFT::create(200,3,0.04,10,1.6);
     
     vector<cv::KeyPoint> keypoints[num_pic];
+    cv::Mat mat_keypoints[num_pic];
     cv::Mat descriptor[num_pic];
     cv::Mat out_img[num_pic];
     for (int i=0; i<num_pic; i++) {
@@ -99,8 +102,19 @@ void siftDetector( int, void* )
         f2d->compute(src_gray[i], keypoints[i], descriptor[i]);
     }
     
+//    //Draw Sift Keypoints
+//    Mat img_keypoints_1;
+//    drawKeypoints(src_gray[0], keypoints[0], img_keypoints_1);
+//    imshow("Keypoints 1", img_keypoints_1);
+    
+    
     vector<DMatch> good_matches;
     goodMatches(descriptor[0], descriptor[1],&good_matches);
+    cout << "Good Matches  " << good_matches.size() << endl;
+    
+    cv::Mat E = findE(keypoints[0], keypoints[1], good_matches);
+    cout << E << endl;
+    
     Mat img_matches;
     drawMatches(src_gray[0], keypoints[0], src_gray[1], keypoints[1], good_matches, img_matches);
     
@@ -169,9 +183,52 @@ void goodMatches(cv::Mat descriptor1, cv::Mat descriptor2,std::vector<DMatch> *g
     
     //Draw Good Matches
     for( int i = 0; i < descriptor1.rows; i++ )
-    { if( matches[i].distance <= max(4*min_dist, 0.02) )
+    { if( matches[i].distance <= max(2*min_dist, 0.02) )
     { (*good_matches).push_back( matches[i]); }
     }
+}
+
+vector<Point2f> normCoord(vector<cv::KeyPoint> keypoints) //Normalize Keypoinst coordinate
+{
+    int num = keypoints.size();
+    float coord[3][num]; // 3*N Matrix
+    for (int i=0; i<num; i++) {
+        coord[0][i] = (float)keypoints.at(i).pt.x;
+        coord[1][i]  = (float)keypoints.at(i).pt.y;
+        coord[2][i]  = (float)1.0;
+    }
+    cv::Mat Coord(3,num,CV_32FC1,coord);
+    Coord = (K.inv())*Coord;
+    
+    vector<Point2f> vec_coord;
+    for (int i=0; i<num; i++) {
+        Point2f tmp_point;
+        tmp_point.x = Coord.at<float>(0,i);
+        tmp_point.y = Coord.at<float>(1,i);
+        vec_coord.push_back(tmp_point);
+    }
+    cout << vec_coord[0] << endl;
+    
+    return vec_coord;
+};
+
+cv::Mat findE(vector<cv::KeyPoint> keypoints1,vector<cv::KeyPoint> keypoints2,vector<DMatch> good_matches) //Find Essential Matrix using 2 images
+{
+    vector<cv::KeyPoint> match_point1, match_point2;
+    
+    int num = good_matches.size();
+    for (int ii=0; ii<num; ii++) {
+        cout << keypoints1[good_matches[ii].queryIdx].pt << endl;
+
+        match_point1.push_back(keypoints1[good_matches[ii].queryIdx]);
+        match_point2.push_back(keypoints2[good_matches[ii].trainIdx]);
+    }
+    vector<Point2f> vec_match_point1 = normCoord(match_point1);
+    vector<Point2f> vec_match_point2 = normCoord(match_point2);
+    
+    cout << vec_match_point1.size() << endl << vec_match_point2.size() << endl;
+    cv::Mat E = findEssentialMat(vec_match_point1, vec_match_point2);
+    return E;
 }
 
 /**
