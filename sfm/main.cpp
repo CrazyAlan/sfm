@@ -126,18 +126,25 @@ void siftDetector( int, void* )
     cout << "Good Matches  " << good_matches.size() << endl;
     
     //Find Fundamental Matrix
-    cv::Mat F = findF(keypoints[0], keypoints[1], good_matches);
-    cout << F << endl;
+   // cv::Mat F = findF(keypoints[0], keypoints[1], good_matches);
+   // cout << F << endl;
     
     vector<Point2d> vec_match_point1, vec_match_point2;
     findMatchingPoint(keypoints[0], keypoints[1], good_matches, &vec_match_point1, &vec_match_point2,NON_NORM);
     
-    drawEpilines(vec_match_point1, vec_match_point2, F,src[0],src[1]);
     
-  //  cv::Mat E = findE(keypoints[0], keypoints[1], good_matches);
+    
+    cv::Mat E = findE(keypoints[0], keypoints[1], good_matches);
+    if(determinant(E) < 0){
+        E = -1*E;
+    }
+    cv::Mat F = ((Kd.t()).inv())*E*(Kd.inv());
+    
+    cout << "F is " << F << endl;
+    drawEpilines(vec_match_point1, vec_match_point2, F,src[0],src[1]);
   //  cout << "E  " << endl << E << endl;
     
-  //  cv:Mat R1,R2,T,P2;
+   // cv:Mat R1,R2,T,P2;
   //  decomposeEssentialMat(E, R1, R2, T);
   //  testRT(R1, R2, T, &P2, keypoints[0], keypoints[1], good_matches);
     
@@ -174,7 +181,7 @@ void goodMatches(cv::Mat descriptor1, cv::Mat descriptor2,std::vector<DMatch> *g
     
     //Draw Good Matches
     for( int i = 0; i < descriptor1.rows; i++ )
-    { if( matches[i].distance <= max(1.6*min_dist, 0.002) )
+    { if( matches[i].distance <= max(2*min_dist, 0.02) )
     { (*good_matches).push_back( matches[i]); }
     }
 }
@@ -262,7 +269,7 @@ void drawEpilinesHelper(vector<Point2d> points1, vector<Point2d> points2, cv::Ma
     convertP2DtoMat(points1, &mat_point1);
     cv::Mat lines(3,points1.size(),CV_64FC1);
     lines = F*mat_point1;
-    cout << lines << endl;
+   // cout << lines << endl;
     
     double a,b,c,d;
     vector<Point2i> vec_A,vec_B;
