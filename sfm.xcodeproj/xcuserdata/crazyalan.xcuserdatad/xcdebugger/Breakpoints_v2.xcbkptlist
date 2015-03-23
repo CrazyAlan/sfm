@@ -26,11 +26,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448828156.017099"
+            timestampString = "448828662.04348"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "198"
-            endingLineNumber = "198"
+            startingLineNumber = "196"
+            endingLineNumber = "196"
             landmarkName = "normCoord(vector&lt;cv::KeyPoint&gt; keypoints)"
             landmarkType = "7">
          </BreakpointContent>
@@ -74,11 +74,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448828156.017099"
+            timestampString = "448828662.04348"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "213"
-            endingLineNumber = "213"
+            startingLineNumber = "211"
+            endingLineNumber = "211"
             landmarkName = "normCoord(vector&lt;cv::KeyPoint&gt; keypoints)"
             landmarkType = "7">
          </BreakpointContent>
@@ -90,11 +90,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448828156.017099"
+            timestampString = "448828662.04348"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "247"
-            endingLineNumber = "247"
+            startingLineNumber = "245"
+            endingLineNumber = "245"
             landmarkName = "findE(vector&lt;cv::KeyPoint&gt; keypoints1,vector&lt;cv::KeyPoint&gt; keypoints2,vector&lt;DMatch&gt; good_matches)"
             landmarkType = "7">
          </BreakpointContent>
@@ -170,11 +170,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448828156.017099"
+            timestampString = "448828735.372922"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "391"
-            endingLineNumber = "391"
+            startingLineNumber = "394"
+            endingLineNumber = "394"
             landmarkName = "testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector&lt;cv::KeyPoint&gt; K1, vector&lt;cv::KeyPoint&gt; K2, std::vector&lt;DMatch&gt; good_matches)"
             landmarkType = "7">
             <Locations>
@@ -185,12 +185,12 @@
                   symbolName = "testRT(cv::Mat, cv::Mat, cv::Mat, cv::Mat*, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, std::__1::vector&lt;cv::DMatch, std::__1::allocator&lt;cv::DMatch&gt; &gt;)"
                   moduleName = "sfm"
                   urlString = "file:///Users/crazyalan/GitHub/sfm2/sfm/sfm/main.cpp"
-                  timestampString = "448828156.341505"
+                  timestampString = "448828735.726179"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "392"
-                  endingLineNumber = "392"
-                  offsetFromSymbolStart = "2859">
+                  startingLineNumber = "395"
+                  endingLineNumber = "395"
+                  offsetFromSymbolStart = "2823">
                </Location>
                <Location
                   shouldBeEnabled = "Yes"
@@ -199,12 +199,12 @@
                   symbolName = "testRT(cv::Mat, cv::Mat, cv::Mat, cv::Mat*, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, std::__1::vector&lt;cv::DMatch, std::__1::allocator&lt;cv::DMatch&gt; &gt;)"
                   moduleName = "sfm"
                   urlString = "file:///Users/crazyalan/GitHub/sfm2/sfm/sfm/main.cpp"
-                  timestampString = "448828156.341975"
+                  timestampString = "448828735.72665"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "392"
-                  endingLineNumber = "392"
-                  offsetFromSymbolStart = "3791">
+                  startingLineNumber = "395"
+                  endingLineNumber = "395"
+                  offsetFromSymbolStart = "3755">
                </Location>
                <Location
                   shouldBeEnabled = "Yes"
@@ -213,54 +213,12 @@
                   symbolName = "testRT(cv::Mat, cv::Mat, cv::Mat, cv::Mat*, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, std::__1::vector&lt;cv::DMatch, std::__1::allocator&lt;cv::DMatch&gt; &gt;)"
                   moduleName = "sfm"
                   urlString = "file:///Users/crazyalan/GitHub/sfm2/sfm/sfm/main.cpp"
-                  timestampString = "448828156.342262"
+                  timestampString = "448828735.726925"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "392"
-                  endingLineNumber = "392"
-                  offsetFromSymbolStart = "3971">
-               </Location>
-               <Location
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "testRT(cv::Mat, cv::Mat, cv::Mat, cv::Mat*, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, std::__1::vector&lt;cv::DMatch, std::__1::allocator&lt;cv::DMatch&gt; &gt;)"
-                  moduleName = "sfm"
-                  urlString = "file:///Users/crazyalan/GitHub/sfm2/sfm/sfm/main.cpp"
-                  timestampString = "448828156.342511"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "392"
-                  endingLineNumber = "392"
-                  offsetFromSymbolStart = "4030">
-               </Location>
-               <Location
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "testRT(cv::Mat, cv::Mat, cv::Mat, cv::Mat*, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, std::__1::vector&lt;cv::DMatch, std::__1::allocator&lt;cv::DMatch&gt; &gt;)"
-                  moduleName = "sfm"
-                  urlString = "file:///Users/crazyalan/GitHub/sfm2/sfm/sfm/main.cpp"
-                  timestampString = "448828156.342735"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "392"
-                  endingLineNumber = "392"
-                  offsetFromSymbolStart = "4079">
-               </Location>
-               <Location
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "testRT(cv::Mat, cv::Mat, cv::Mat, cv::Mat*, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, std::__1::vector&lt;cv::DMatch, std::__1::allocator&lt;cv::DMatch&gt; &gt;)"
-                  moduleName = "sfm"
-                  urlString = "file:///Users/crazyalan/GitHub/sfm2/sfm/sfm/main.cpp"
-                  timestampString = "448828156.342966"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "392"
-                  endingLineNumber = "392"
-                  offsetFromSymbolStart = "4130">
+                  startingLineNumber = "395"
+                  endingLineNumber = "395"
+                  offsetFromSymbolStart = "4001">
                </Location>
             </Locations>
          </BreakpointContent>

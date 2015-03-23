@@ -330,6 +330,8 @@ cv::Mat myLinearTriangulation(Point2d vec_point1, Point2d vec_point2,cv::Mat P, 
 {
     cv::Mat ho_point1(3,1,CV_64FC1);
     cv::Mat ho_point2(3,1,CV_64FC1);
+  //  cout << "vec_point1 " << endl << vec_point1 << endl;
+  //  cout << "ho_point1 " << endl << ho_point1 << endl;
     
     convertP2DtoMat(vec_point1,&ho_point1); //3*N
     convertP2DtoMat(vec_point2, &ho_point2); //3*N
@@ -339,9 +341,9 @@ cv::Mat myLinearTriangulation(Point2d vec_point1, Point2d vec_point2,cv::Mat P, 
     convertVec2CrossMat(ho_point1, &cross_mat1);
     convertVec2CrossMat(ho_point2, &cross_mat2);
 
-    
+   // cout << "P is " << endl << P << endl;
     A1 = cross_mat1*P;
-    A2 = cross_mat2*P;
+    A2 = cross_mat2*P_prime;
     
     vconcat(A1, A2, A);
     cv::Mat w,u,vt;
@@ -375,8 +377,10 @@ void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint>
     
     for (int i=0; i<4; i++) {
         cv::Mat t_point;
+        myLinearTriangulation(vec_match_point1.at(0), vec_match_point2.at(0), P, P_prime[i]);
         triangulatePoints(P, P_prime[i], mat_point1, mat_point2, t_point);
-        if ((t_point.at<double>(2,0)/t_point.at<double>(3, 0))>0) {
+        cout << "t_point is " << endl << t_point << endl;
+    /*    if ((t_point.at<double>(2,0)/t_point.at<double>(3, 0))>0) {
             cv::Mat t_point_c2;
             t_point_c2 = P_prime[i]*t_point;
             if (t_point_c2.at<double>(2, 0)>0) {
@@ -385,6 +389,7 @@ void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint>
               //  cout << "t_point2 " << t_point_c2 <<endl;
             }
         }
+     */
     }
     
 }
