@@ -158,7 +158,7 @@ void siftDetector( int, void* )
     cv::Mat P;
     hconcat(I, cv::Mat(3,1,CV_64FC1,Scalar::all(0)), P);
     
-    doTriangulatiocd n2Images(keypoints[0], keypoints[1], good_matches, src[0], src[1], P, P2);
+    doTriangulation2Images(keypoints[0], keypoints[1], good_matches, src[0], src[1], P, P2);
     
     Mat img_matches;
     drawMatches(src_gray[0], keypoints[0], src_gray[1], keypoints[1], good_matches, img_matches);
