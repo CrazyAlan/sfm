@@ -62,7 +62,8 @@ void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint>
 cv::Mat findF(vector<cv::KeyPoint> keypoints1,vector<cv::KeyPoint> keypoints2,vector<DMatch> good_matches);
 void convertP2DtoMat(vector<Point2d> point, cv::Mat *mat_point);
 
-void drawEpilines(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F);
+void drawEpilines(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F, cv::Mat src1, cv::Mat src2);
+void drawEpilinesHelper(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F, cv::Mat *img1, cv::Mat *img2);
 
 cv::Mat buildA(std::vector<KeyPoint> keypoint_1, std::vector<KeyPoint> keypoint_2, std::vector<DMatch> good_matches);
 cv::Mat buildCoord(int x_min, int x_max, int y_min, int y_max);
@@ -131,14 +132,14 @@ void siftDetector( int, void* )
     vector<Point2d> vec_match_point1, vec_match_point2;
     findMatchingPoint(keypoints[0], keypoints[1], good_matches, &vec_match_point1, &vec_match_point2,NON_NORM);
     
-   // drawEpilines(vec_match_point1, vec_match_point2, F);
+    drawEpilines(vec_match_point1, vec_match_point2, F,src[0],src[1]);
     
-    cv::Mat E = findE(keypoints[0], keypoints[1], good_matches);
+  //  cv::Mat E = findE(keypoints[0], keypoints[1], good_matches);
   //  cout << "E  " << endl << E << endl;
     
-    cv:Mat R1,R2,T,P2;
-    decomposeEssentialMat(E, R1, R2, T);
-    testRT(R1, R2, T, &P2, keypoints[0], keypoints[1], good_matches);
+  //  cv:Mat R1,R2,T,P2;
+  //  decomposeEssentialMat(E, R1, R2, T);
+  //  testRT(R1, R2, T, &P2, keypoints[0], keypoints[1], good_matches);
     
     Mat img_matches;
     drawMatches(src_gray[0], keypoints[0], src_gray[1], keypoints[1], good_matches, img_matches);
@@ -255,7 +256,7 @@ void convertP2DtoMat(vector<Point2d> point, cv::Mat *mat_point)
     }
 }
 
-void drawEpilines(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F)
+void drawEpilinesHelper(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F, cv::Mat *img1, cv::Mat *img2)
 {
     cv::Mat mat_point1(3,points1.size(),CV_64FC1);
     convertP2DtoMat(points1, &mat_point1);
@@ -264,21 +265,36 @@ void drawEpilines(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F)
     cout << lines << endl;
     
     double a,b,c,d;
-    a = lines.at<double>(0,0);
-    b = lines.at<double>(1,0);
-    c = lines.at<double>(2,0);
-    d = src_gray[0].cols;
+    vector<Point2i> vec_A,vec_B;
+    for (int i=0; i<mat_point1.cols; i++) {
+        a = lines.at<double>(0,i);
+        b = lines.at<double>(1,i);
+        c = lines.at<double>(2,i);
+        d = (*img2).cols;
+
+        Point2i A,B;
+        A.x = 0; A.y = (-1*c)/b;
+        B.x = d; B.y = -1*(a*d + c)/b;
+        vec_A.push_back(A);
+        vec_B.push_back(B);
+        
+        cv::line(*img2, A, B, Scalar(0, 0, 255));
+        cv::circle(*img2, points2.at(i), 8, Scalar(rand()%255, rand()%255, rand()%255),-1);
+
+    }
+    resize(*img2, *img2, Size((*img2).cols/2,(*img2).rows/2));
+   // imshow("img", *img2);
+}
+
+void drawEpilines(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F, cv::Mat src1, cv::Mat src2)
+{
+    cv::Mat img1,img2;
+    src1.copyTo(img1); src2.copyTo(img2);
+    drawEpilinesHelper(points1, points2, F, &img1, &img2);
+    drawEpilinesHelper(points2, points1, F.t(), &img2, &img1);
     
-    Point2i A,B;
-    A.x = 0; A.y = (-1*c)/b;
-    B.x = d; B.y = -1*(a*d + c)/b;
-    
-    cv::line(src_gray[1], A, B, 2);
-    
-    imshow("line", src_gray[1]);
-    
-    
-    
+    imshow("img1", img1);
+    imshow("img2", img2);
 }
 
 
