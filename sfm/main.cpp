@@ -21,6 +21,9 @@ using namespace cv::xfeatures2d;
 cv::Mat src[4], src_gray[4];
 float k[3][3] = {{1077.9,0,594.0},{0,1077.9,393.3},{0,0,1}};
 cv::Mat K(3,3,CV_32FC1,k); //Camera Matrix
+cv::Mat Kd(3,3,CV_64FC1,Scalar::all(0));
+
+
 
 const int num_pic = 2;
 
@@ -39,6 +42,8 @@ const float offset_cols = 1600;
 #define TO_REFERED_COORD 0
 #define REFEREE_ID 1
 #define RANSAC_TIMES 34
+#define NORM 1
+#define NON_NORM 0
 
 float norm_ma[3][3] = {{2/cols,0,-1},{0,2/rows,-1},{0,0,1}};
 cv::Mat norm_matrix = cv::Mat(3, 3, CV_32FC1,norm_ma);
@@ -50,8 +55,14 @@ cv::Mat board_coord = m_tmp.t();
 /// Function header
 void siftDetector( int, void* );
 void goodMatches(cv::Mat descriptor1, cv::Mat descriptor2,std::vector<DMatch>* good_matches);
-vector<Point2f>  normCoord(vector<cv::KeyPoint> keypoints);
+vector<Point2d>  normCoord(vector<cv::KeyPoint> keypoints);
+void findMatchingPoint(vector<KeyPoint> K1, vector<KeyPoint> K2,vector<DMatch> good_matches, vector<Point2d> *match_point1, vector<Point2d> *match_point2, bool norm_flag);
 cv::Mat findE(vector<cv::KeyPoint> keypoints1,vector<cv::KeyPoint> keypoints2,vector<DMatch> good_matches);
+void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint> K1, vector<cv::KeyPoint> K2, std::vector<DMatch> good_matches);
+cv::Mat findF(vector<cv::KeyPoint> keypoints1,vector<cv::KeyPoint> keypoints2,vector<DMatch> good_matches);
+void convertP2DtoMat(vector<Point2d> point, cv::Mat *mat_point);
+
+void drawEpilines(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F);
 
 cv::Mat buildA(std::vector<KeyPoint> keypoint_1, std::vector<KeyPoint> keypoint_2, std::vector<DMatch> good_matches);
 cv::Mat buildCoord(int x_min, int x_max, int y_min, int y_max);
@@ -71,6 +82,7 @@ void randomArray(int size, int range, int *array);
 int main( int, char** argv )
 {
     srand (time(NULL));
+    K.convertTo(Kd, 6);
     
     /// Load source image and convert it to grayn
     for (int i=0; i<num_pic; i++) {
@@ -91,7 +103,7 @@ int main( int, char** argv )
  */
 void siftDetector( int, void* )
 {
-    cv::Ptr<Feature2D> f2d = xfeatures2d::SIFT::create(200,3,0.04,10,1.6);
+    cv::Ptr<Feature2D> f2d = xfeatures2d::SIFT::create(1000,3,0.04,10,1.6);
     
     vector<cv::KeyPoint> keypoints[num_pic];
     cv::Mat mat_keypoints[num_pic];
@@ -112,8 +124,21 @@ void siftDetector( int, void* )
     goodMatches(descriptor[0], descriptor[1],&good_matches);
     cout << "Good Matches  " << good_matches.size() << endl;
     
+    //Find Fundamental Matrix
+    cv::Mat F = findF(keypoints[0], keypoints[1], good_matches);
+    cout << F << endl;
+    
+    vector<Point2d> vec_match_point1, vec_match_point2;
+    findMatchingPoint(keypoints[0], keypoints[1], good_matches, &vec_match_point1, &vec_match_point2,NON_NORM);
+    
+   // drawEpilines(vec_match_point1, vec_match_point2, F);
+    
     cv::Mat E = findE(keypoints[0], keypoints[1], good_matches);
-    cout << E << endl;
+  //  cout << "E  " << endl << E << endl;
+    
+    cv:Mat R1,R2,T,P2;
+    decomposeEssentialMat(E, R1, R2, T);
+    testRT(R1, R2, T, &P2, keypoints[0], keypoints[1], good_matches);
     
     Mat img_matches;
     drawMatches(src_gray[0], keypoints[0], src_gray[1], keypoints[1], good_matches, img_matches);
@@ -122,41 +147,6 @@ void siftDetector( int, void* )
     imshow( "Good Matches", img_matches );
 
     
-    
-
-    
-//    for (int i=0; i<3; i++) {
-//        //cv::Mat img_matches;
-//        
-//        //Projective Transform Matrix
-//        //Transform From Img1 to Img2
-//        
-//        ransac(good_matches, &inlier_matches, keypoints[i], keypoints[REFEREE_ID]);
-//        cv::Mat H =  getTrans(keypoints[i], keypoints[REFEREE_ID], inlier_matches);
-//        
-//        //Using Reprojection Error to Optimize
-//        matTransCVMat2Mate(&H,&H_hat,1);
-//        buildX1X2ForReprojection(keypoints[i], keypoints[REFEREE_ID], good_matches, &X1, &X2);
-//        EstimateHomography2DFromReprojection(X1, X2,options,&H_hat);
-//        
-//        std::cout << "Original matrix:\n" << H << "\n";
-//        std::cout << "Estimated matrix:\n" << H_hat << "\n";
-//        
-//        
-//        //   matTransCVMat2Mate(&H, &H_hat, 0);
-//        cv::Mat img_coord;
-//        cv::Mat out_img_coord;
-//        getImgNSrcCoord(H, &img_coord, &out_img_coord);
-//        
-//        affineTrans(&src[i], &out_img[i], img_coord, out_img_coord);
-//        out_img[REFEREE_ID] = linearBlend(out_img[i], out_img[REFEREE_ID]);
-//        
-//    }
-//    
-//    
-//    resize(out_img[REFEREE_ID] , out_img[REFEREE_ID], Size(out_img[REFEREE_ID].cols/4,out_img[REFEREE_ID].rows/4));
-//    namedWindow(matches_window,0);
-//    imshow( "Good Matches", out_img[REFEREE_ID]);
     
 }
 
@@ -183,53 +173,159 @@ void goodMatches(cv::Mat descriptor1, cv::Mat descriptor2,std::vector<DMatch> *g
     
     //Draw Good Matches
     for( int i = 0; i < descriptor1.rows; i++ )
-    { if( matches[i].distance <= max(2*min_dist, 0.02) )
+    { if( matches[i].distance <= max(1.6*min_dist, 0.002) )
     { (*good_matches).push_back( matches[i]); }
     }
 }
 
-vector<Point2f> normCoord(vector<cv::KeyPoint> keypoints) //Normalize Keypoinst coordinate
+vector<Point2d> normCoord(vector<cv::KeyPoint> keypoints) //Normalize Keypoinst coordinate
 {
     int num = keypoints.size();
-    float coord[3][num]; // 3*N Matrix
+    double coord[3][num]; // 3*N Matrix
     for (int i=0; i<num; i++) {
-        coord[0][i] = (float)keypoints.at(i).pt.x;
-        coord[1][i]  = (float)keypoints.at(i).pt.y;
-        coord[2][i]  = (float)1.0;
+        coord[0][i] = (double)keypoints.at(i).pt.x;
+        coord[1][i]  = (double)keypoints.at(i).pt.y;
+        coord[2][i]  = (double)1.0;
     }
-    cv::Mat Coord(3,num,CV_32FC1,coord);
-    Coord = (K.inv())*Coord;
+    cv::Mat Coord(3,num,CV_64FC1,coord);
+    Coord = (Kd.inv())*(Coord);
     
-    vector<Point2f> vec_coord;
+    vector<Point2d> vec_coord;
     for (int i=0; i<num; i++) {
-        Point2f tmp_point;
-        tmp_point.x = Coord.at<float>(0,i);
-        tmp_point.y = Coord.at<float>(1,i);
+        Point2d tmp_point;
+        tmp_point.x = Coord.at<double>(0,i)/Coord.at<double>(2,i);
+        tmp_point.y = Coord.at<double>(1,i)/Coord.at<double>(2,i);
         vec_coord.push_back(tmp_point);
     }
-    cout << vec_coord[0] << endl;
+ //   cout << vec_coord[0] << endl;
     
     return vec_coord;
 };
 
+void findMatchingPoint(vector<KeyPoint> K1, vector<KeyPoint> K2,vector<DMatch> good_matches, vector<Point2d> *match_point1, vector<Point2d> *match_point2,bool norm_flag)
+{
+    if (norm_flag) {
+        vector<cv::KeyPoint> point1, point2;
+        int num = good_matches.size();
+        for (int ii=0; ii<num; ii++) {
+            // cout << keypoints1[good_matches[ii].queryIdx].pt << endl;
+            
+            point1.push_back(K1[good_matches[ii].queryIdx]);
+            point2.push_back(K2[good_matches[ii].trainIdx]);
+        }
+        *match_point1 = normCoord(point1);
+        *match_point2 = normCoord(point2);
+
+    } else {
+        int num = good_matches.size();
+        for (int ii=0; ii<num; ii++) {
+            Point2d tmp_point1,tmp_point2;
+            tmp_point1 = K1[good_matches[ii].queryIdx].pt;
+            (*match_point1).push_back(tmp_point1);
+            tmp_point2 = K2[good_matches[ii].trainIdx].pt;
+            (*match_point2).push_back(tmp_point2);
+        }
+    }
+}
+
 cv::Mat findE(vector<cv::KeyPoint> keypoints1,vector<cv::KeyPoint> keypoints2,vector<DMatch> good_matches) //Find Essential Matrix using 2 images
 {
+    vector<Point2d> vec_match_point1, vec_match_point2;
+    findMatchingPoint(keypoints1, keypoints2, good_matches, &vec_match_point1, &vec_match_point2,NORM);
+    
+    cv::Mat E = findEssentialMat(vec_match_point1, vec_match_point2);
+    return E;
+}
+
+cv::Mat findF(vector<cv::KeyPoint> keypoints1,vector<cv::KeyPoint> keypoints2,vector<DMatch> good_matches) //Find Fundamental Matrix
+{
+    vector<Point2d> vec_match_point1, vec_match_point2;
+    findMatchingPoint(keypoints1, keypoints2, good_matches, &vec_match_point1, &vec_match_point2,NON_NORM);
+    cv::Mat F = findFundamentalMat(vec_match_point1, vec_match_point2);
+    return F;
+}
+
+void convertP2DtoMat(vector<Point2d> point, cv::Mat *mat_point)
+{
+    int num = point.size();
+    for (int i=0; i<num; i++) {
+        (*mat_point).at<double>(0,i) = point.at(i).x;
+        (*mat_point).at<double>(1,i) = point.at(i).y;
+        (*mat_point).at<double>(2,i) = (double)1.0;
+    }
+}
+
+void drawEpilines(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F)
+{
+    cv::Mat mat_point1(3,points1.size(),CV_64FC1);
+    convertP2DtoMat(points1, &mat_point1);
+    cv::Mat lines(3,points1.size(),CV_64FC1);
+    lines = F*mat_point1;
+    cout << lines << endl;
+    
+    double a,b,c,d;
+    a = lines.at<double>(0,0);
+    b = lines.at<double>(1,0);
+    c = lines.at<double>(2,0);
+    d = src_gray[0].cols;
+    
+    Point2i A,B;
+    A.x = 0; A.y = (-1*c)/b;
+    B.x = d; B.y = -1*(a*d + c)/b;
+    
+    cv::line(src_gray[1], A, B, 2);
+    
+    imshow("line", src_gray[1]);
+    
+    
+    
+}
+
+
+void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint> K1, vector<cv::KeyPoint> K2, std::vector<DMatch> good_matches){
+    
     vector<cv::KeyPoint> match_point1, match_point2;
     
     int num = good_matches.size();
     for (int ii=0; ii<num; ii++) {
-        cout << keypoints1[good_matches[ii].queryIdx].pt << endl;
-
-        match_point1.push_back(keypoints1[good_matches[ii].queryIdx]);
-        match_point2.push_back(keypoints2[good_matches[ii].trainIdx]);
+        
+        match_point1.push_back(K1[good_matches[ii].queryIdx]);
+        match_point2.push_back(K2[good_matches[ii].trainIdx]);
     }
-    vector<Point2f> vec_match_point1 = normCoord(match_point1);
-    vector<Point2f> vec_match_point2 = normCoord(match_point2);
+    vector<Point2d> vec_match_point1 = normCoord(match_point1);
+    vector<Point2d> vec_match_point2 = normCoord(match_point2);
+ //   cout << "Point2  " << vec_match_point2 << endl;
     
-    cout << vec_match_point1.size() << endl << vec_match_point2.size() << endl;
-    cv::Mat E = findEssentialMat(vec_match_point1, vec_match_point2);
-    return E;
+    double tmp1[2] = {vec_match_point1[0].x,vec_match_point1[0].y};
+    double tmp2[2] = {vec_match_point2[0].x,vec_match_point2[0].y};
+    double test_point[4] = {1,1,1,1};
+    cv::Mat mat_point1(1,1,CV_64FC2,tmp1);
+    cv::Mat mat_point2(1,1,CV_64FC2,tmp2);
+    cv::Mat mat_test_point(4,1,CV_64FC1,test_point);
+
+    cv::Mat I = Mat::eye(3, 3, CV_64FC1);
+    cv::Mat P;
+    hconcat(I, cv::Mat(3,1,CV_64FC1,Scalar::all(0)), P);
+    
+    cv::Mat P_prime[4];
+    hconcat(R1, T, P_prime[0]);
+    hconcat(R2, T, P_prime[1]);
+    hconcat(R1, -1*T, P_prime[2]);
+    hconcat(R2, -1*T, P_prime[3]);
+    for (int i=0; i<4; i++) {
+        cv::Mat reconstruct_p = P_prime[i]*mat_test_point;
+        if ((reconstruct_p.at<double>(1,0)/reconstruct_p.at<double>(2,0))>0) {
+            cv::Mat ordinary_point;
+            triangulatePoints(P, P_prime[i], mat_point1, mat_point2, ordinary_point);
+            if ((ordinary_point.at<double>(2,0)/ordinary_point.at<double>(3,0))>0) {
+              //  cout << "Reconstruc p" << reconstruct_p << endl << "ordinary point" << ordinary_point << endl;
+                cout << "P_PRIME" << P_prime[i]<< endl;
+                P_prime[i].copyTo(*P2);
+             }
+        }
+    }
 }
+
 
 /**
  * @function ransac
