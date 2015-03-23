@@ -58,9 +58,13 @@ void goodMatches(cv::Mat descriptor1, cv::Mat descriptor2,std::vector<DMatch>* g
 vector<Point2d>  normCoord(vector<cv::KeyPoint> keypoints);
 void findMatchingPoint(vector<KeyPoint> K1, vector<KeyPoint> K2,vector<DMatch> good_matches, vector<Point2d> *match_point1, vector<Point2d> *match_point2, bool norm_flag);
 cv::Mat findE(vector<cv::KeyPoint> keypoints1,vector<cv::KeyPoint> keypoints2,vector<DMatch> good_matches);
+void convertP2DtoMat(vector<Point2d> point, cv::Mat *mat_point);
+void convertP2DtoMat(Point2d point, cv::Mat *mat_point);
+void convertVec2CrossMat(cv::Mat vec_origin, cv::Mat *cross_mat);
+
+cv::Mat myLinearTriangulation(Point2d vec_point1, Point2d vec_point2,cv::Mat P, cv::Mat P_prime);
 void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint> K1, vector<cv::KeyPoint> K2, std::vector<DMatch> good_matches);
 cv::Mat findF(vector<cv::KeyPoint> keypoints1,vector<cv::KeyPoint> keypoints2,vector<DMatch> good_matches);
-void convertP2DtoMat(vector<Point2d> point, cv::Mat *mat_point);
 
 void drawEpilines(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F, cv::Mat src1, cv::Mat src2);
 void drawEpilinesHelper(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F, cv::Mat *img1, cv::Mat *img2);
@@ -129,32 +133,29 @@ void siftDetector( int, void* )
    // cv::Mat F = findF(keypoints[0], keypoints[1], good_matches);
    // cout << F << endl;
     
-    vector<Point2d> vec_match_point1, vec_match_point2;
-    findMatchingPoint(keypoints[0], keypoints[1], good_matches, &vec_match_point1, &vec_match_point2,NON_NORM);
+ //   vector<Point2d> vec_match_point1, vec_match_point2;
+ //   findMatchingPoint(keypoints[0], keypoints[1], good_matches, &vec_match_point1, &vec_match_point2,NON_NORM);
     
     
     
     cv::Mat E = findE(keypoints[0], keypoints[1], good_matches);
-    if(determinant(E) < 0){
-        E = -1*E;
-    }
-    cv::Mat F = ((Kd.t()).inv())*E*(Kd.inv());
+
+    //  cv::Mat F = ((Kd.t()).inv())*E*(Kd.inv());
     
-    cout << "F is " << F << endl;
-    drawEpilines(vec_match_point1, vec_match_point2, F,src[0],src[1]);
+  //  cout << "F is " << F << endl;
+  //  drawEpilines(vec_match_point1, vec_match_point2, F,src[0],src[1]);
   //  cout << "E  " << endl << E << endl;
     
-   // cv:Mat R1,R2,T,P2;
-  //  decomposeEssentialMat(E, R1, R2, T);
-  //  testRT(R1, R2, T, &P2, keypoints[0], keypoints[1], good_matches);
+    cv:Mat R1,R2,T,P2;
+    decomposeEssentialMat(E, R1, R2, T);
+    testRT(R1, R2, T, &P2, keypoints[0], keypoints[1], good_matches);
+    
     
     Mat img_matches;
     drawMatches(src_gray[0], keypoints[0], src_gray[1], keypoints[1], good_matches, img_matches);
     
     resize(img_matches, img_matches, Size(img_matches.cols/2,img_matches.rows/2));
     imshow( "Good Matches", img_matches );
-
-    
     
 }
 
@@ -263,6 +264,27 @@ void convertP2DtoMat(vector<Point2d> point, cv::Mat *mat_point)
     }
 }
 
+void convertP2DtoMat(Point2d point, cv::Mat *mat_point)
+{
+        (*mat_point).at<double>(0,0) = point.x;
+        (*mat_point).at<double>(1,0) = point.y;
+        (*mat_point).at<double>(2,0) = (double)1.0;
+}
+
+void convertVec2CrossMat(cv::Mat vec_origin, cv::Mat *cross_mat)
+{
+    cv::Mat tmp = cv::Mat::zeros(3, 3, CV_64FC1);
+    tmp.copyTo(*cross_mat);
+    (*cross_mat).at<double>(1,0) = vec_origin.at<double>(0,2);//a3
+    (*cross_mat).at<double>(2,0) = -1*(vec_origin.at<double>(0,1));//-a2
+    (*cross_mat).at<double>(0,1) = -1*(vec_origin.at<double>(0,2));//-a3
+    (*cross_mat).at<double>(2,1) = vec_origin.at<double>(0,0);//a1
+    (*cross_mat).at<double>(0,2) = vec_origin.at<double>(0,1);//a2
+    (*cross_mat).at<double>(1,2) = -1*(vec_origin.at<double>(0,0));//-a1
+
+}
+
+
 void drawEpilinesHelper(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F, cv::Mat *img1, cv::Mat *img2)
 {
     cv::Mat mat_point1(3,points1.size(),CV_64FC1);
@@ -304,27 +326,42 @@ void drawEpilines(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F, c
     imshow("img2", img2);
 }
 
+cv::Mat myLinearTriangulation(Point2d vec_point1, Point2d vec_point2,cv::Mat P, cv::Mat P_prime) //Using Non-Normalized Coordinate
+{
+    cv::Mat ho_point1(3,1,CV_64FC1);
+    cv::Mat ho_point2(3,1,CV_64FC1);
+    
+    convertP2DtoMat(vec_point1,&ho_point1); //3*N
+    convertP2DtoMat(vec_point2, &ho_point2); //3*N
+    cv::Mat A1,A2,A;
+    cv::Mat cross_mat1(3,3,CV_64FC1);
+    cv::Mat cross_mat2(3,3,CV_64FC1);
+    convertVec2CrossMat(ho_point1, &cross_mat1);
+    convertVec2CrossMat(ho_point2, &cross_mat2);
+
+    
+    A1 = cross_mat1*P;
+    A2 = cross_mat2*P;
+    
+    vconcat(A1, A2, A);
+    cv::Mat w,u,vt;
+    SVD::compute(A.t()*A, w, u, vt);
+    cv::Mat X_hat((vt.t()).col(3));
+    cout << "Vt " << vt.t().col(3) << endl;
+    return X_hat;
+}
 
 void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint> K1, vector<cv::KeyPoint> K2, std::vector<DMatch> good_matches){
     
-    vector<cv::KeyPoint> match_point1, match_point2;
+    vector<Point2d> vec_match_point1, vec_match_point2;
+    findMatchingPoint(K1, K2, good_matches, &vec_match_point1, &vec_match_point2,NORM);
     
-    int num = good_matches.size();
-    for (int ii=0; ii<num; ii++) {
-        
-        match_point1.push_back(K1[good_matches[ii].queryIdx]);
-        match_point2.push_back(K2[good_matches[ii].trainIdx]);
-    }
-    vector<Point2d> vec_match_point1 = normCoord(match_point1);
-    vector<Point2d> vec_match_point2 = normCoord(match_point2);
- //   cout << "Point2  " << vec_match_point2 << endl;
+    //   cout << "Point2  " << vec_match_point2 << endl;
     
     double tmp1[2] = {vec_match_point1[0].x,vec_match_point1[0].y};
     double tmp2[2] = {vec_match_point2[0].x,vec_match_point2[0].y};
-    double test_point[4] = {1,1,1,1};
     cv::Mat mat_point1(1,1,CV_64FC2,tmp1);
     cv::Mat mat_point2(1,1,CV_64FC2,tmp2);
-    cv::Mat mat_test_point(4,1,CV_64FC1,test_point);
 
     cv::Mat I = Mat::eye(3, 3, CV_64FC1);
     cv::Mat P;
@@ -335,18 +372,21 @@ void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint>
     hconcat(R2, T, P_prime[1]);
     hconcat(R1, -1*T, P_prime[2]);
     hconcat(R2, -1*T, P_prime[3]);
+    
     for (int i=0; i<4; i++) {
-        cv::Mat reconstruct_p = P_prime[i]*mat_test_point;
-        if ((reconstruct_p.at<double>(1,0)/reconstruct_p.at<double>(2,0))>0) {
-            cv::Mat ordinary_point;
-            triangulatePoints(P, P_prime[i], mat_point1, mat_point2, ordinary_point);
-            if ((ordinary_point.at<double>(2,0)/ordinary_point.at<double>(3,0))>0) {
-              //  cout << "Reconstruc p" << reconstruct_p << endl << "ordinary point" << ordinary_point << endl;
-                cout << "P_PRIME" << P_prime[i]<< endl;
-                P_prime[i].copyTo(*P2);
-             }
+        cv::Mat t_point;
+        triangulatePoints(P, P_prime[i], mat_point1, mat_point2, t_point);
+        if ((t_point.at<double>(2,0)/t_point.at<double>(3, 0))>0) {
+            cv::Mat t_point_c2;
+            t_point_c2 = P_prime[i]*t_point;
+            if (t_point_c2.at<double>(2, 0)>0) {
+                (P_prime[i]).copyTo(*P2);
+                cout << "P2 is" << *P2 << endl;
+              //  cout << "t_point2 " << t_point_c2 <<endl;
+            }
         }
     }
+    
 }
 
 
