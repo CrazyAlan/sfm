@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <fstream>
+
 
 #include "ceres_optimization.h"
 using namespace cv;
@@ -63,6 +65,7 @@ void convertP2DtoMat(Point2d point, cv::Mat *mat_point);
 void convertVec2CrossMat(cv::Mat vec_origin, cv::Mat *cross_mat);
 
 cv::Mat myLinearTriangulation(Point2d vec_point1, Point2d vec_point2,cv::Mat P, cv::Mat P_prime);
+void doTriangulation2Images(vector<cv::KeyPoint> K1,vector<cv::KeyPoint> K2, vector<DMatch> good_matches, cv::Mat img1, cv::Mat img2, cv::Mat P, cv::Mat P_prime);
 void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint> K1, vector<cv::KeyPoint> K2, std::vector<DMatch> good_matches);
 cv::Mat findF(vector<cv::KeyPoint> keypoints1,vector<cv::KeyPoint> keypoints2,vector<DMatch> good_matches);
 
@@ -94,6 +97,7 @@ int main( int, char** argv )
         src[i] = imread( argv[1+i], 1 );
         cvtColor( src[i], src_gray[i], COLOR_BGR2GRAY );
     }
+    
     
     siftDetector( 0, 0 );
     
@@ -150,6 +154,11 @@ void siftDetector( int, void* )
     decomposeEssentialMat(E, R1, R2, T);
     testRT(R1, R2, T, &P2, keypoints[0], keypoints[1], good_matches);
     
+    cv::Mat I = Mat::eye(3, 3, CV_64FC1);
+    cv::Mat P;
+    hconcat(I, cv::Mat(3,1,CV_64FC1,Scalar::all(0)), P);
+    
+    doTriangulatiocd n2Images(keypoints[0], keypoints[1], good_matches, src[0], src[1], P, P2);
     
     Mat img_matches;
     drawMatches(src_gray[0], keypoints[0], src_gray[1], keypoints[1], good_matches, img_matches);
@@ -353,6 +362,43 @@ cv::Mat myLinearTriangulation(Point2d vec_point1, Point2d vec_point2,cv::Mat P, 
     return X_hat;
 }
 
+void doTriangulation2Images(vector<cv::KeyPoint> K1,vector<cv::KeyPoint> K2, vector<DMatch> good_matches, cv::Mat img1, cv::Mat img2, cv::Mat P, cv::Mat P_prime)
+{
+    vector<Point2d> vec_match_point1, vec_match_point2;
+    findMatchingPoint(K1, K2, good_matches, &vec_match_point1, &vec_match_point2,NON_NORM);
+    //P and P_prime is Normalized (Without Camera Intrinsic Info)
+    cv::Mat KP = Kd*P;
+    cv::Mat KP_prime = Kd*P_prime;
+    
+    cv::Mat triangulated_point;
+    triangulatePoints(KP, KP_prime, vec_match_point1, vec_match_point2, triangulated_point);
+   // cout << "triangulated points " << triangulated_point << endl;
+    cv::Mat rgb_value(vec_match_point1.size(),1,CV_8UC3);
+    for (int i=0; i<vec_match_point1.size(); i++) { //Interpolate The Pixel Value
+        
+       // cout << "img 1" << img1.at<Vec3b>(vec_match_point1.at(i)) << endl;
+       // cout << "img 2" << img2.at<Vec3b>(vec_match_point2.at(i)) << endl;
+        
+        Vec3i tmp1 =  img1.at<Vec3b>(vec_match_point1.at(i));
+        Vec3i tmp2 =  img2.at<Vec3b>(vec_match_point2.at(i));
+        rgb_value.at<Vec3b>(i,0) = (tmp1 + tmp2)/2;
+       // cout << "tmp " << rgb_value.at<Vec3b>(i,0) <<  endl;
+
+    }
+    
+    ofstream myfile;
+    myfile.open("./plyFiles/img1_img2.ply");
+    for (int i=0; i<vec_match_point1.size(); i++) {
+        myfile << (triangulated_point.col(i)).t() << endl;
+        myfile << rgb_value.row(i) << endl;
+    }
+    
+    
+    myfile.close();
+
+  //  cout << "rgb value" << rgb_value << endl;
+}
+
 void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint> K1, vector<cv::KeyPoint> K2, std::vector<DMatch> good_matches){
     
     vector<Point2d> vec_match_point1, vec_match_point2;
@@ -377,10 +423,10 @@ void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint>
     
     for (int i=0; i<4; i++) {
         cv::Mat t_point;
-        myLinearTriangulation(vec_match_point1.at(0), vec_match_point2.at(0), P, P_prime[i]);
+     //   myLinearTriangulation(vec_match_point1.at(0), vec_match_point2.at(0), P, P_prime[i]);
         triangulatePoints(P, P_prime[i], mat_point1, mat_point2, t_point);
-        cout << "t_point is " << endl << t_point << endl;
-    /*    if ((t_point.at<double>(2,0)/t_point.at<double>(3, 0))>0) {
+     //   cout << "t_point is " << endl << t_point << endl;
+        if ((t_point.at<double>(2,0)/t_point.at<double>(3, 0))>0) {
             cv::Mat t_point_c2;
             t_point_c2 = P_prime[i]*t_point;
             if (t_point_c2.at<double>(2, 0)>0) {
@@ -389,9 +435,7 @@ void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint>
               //  cout << "t_point2 " << t_point_c2 <<endl;
             }
         }
-     */
     }
-    
 }
 
 
