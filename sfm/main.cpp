@@ -147,7 +147,8 @@ void siftDetector( int, void* )
     decomposeEssentialMat(E, R1, R2, T);
     testRT(R1, R2, T, &P[1], keypoints[0], keypoints[1], good_matches[0]);
     doTriangulation2Images(keypoints[0], keypoints[1], good_matches[0], src[0], src[1], P[0], P[1]);
-    
+    cout << "threeDpointRGB  " << threeD_point_rgb.at(3) << endl;
+    cout << "threeDpointLoc " << threeD_point_loc.at(3) << endl;
 
 //    //Draw Sift Keypoints
 //    Mat img_keypoints_1;
@@ -374,7 +375,10 @@ cv::Mat myLinearTriangulation(Point2d vec_point1, Point2d vec_point2,cv::Mat P, 
 void doTriangulation2Images(vector<cv::KeyPoint> K1,vector<cv::KeyPoint> K2, vector<DMatch> good_matches, cv::Mat img1, cv::Mat img2, cv::Mat P, cv::Mat P_prime)
 {
     vector<Point2d> vec_match_point1, vec_match_point2;
+    vector<Point2d> vec_match_point11, vec_match_point22;
     findMatchingPoint(K1, K2, good_matches, &vec_match_point1, &vec_match_point2,NORM);
+    findMatchingPoint(K1, K2, good_matches, &vec_match_point11, &vec_match_point22,NON_NORM);
+
     //P and P_prime is Normalized (Without Camera Intrinsic Info)
    // cv::Mat KP = Kd*P;
    // cv::Mat KP_prime = Kd*P_prime;
@@ -385,9 +389,10 @@ void doTriangulation2Images(vector<cv::KeyPoint> K1,vector<cv::KeyPoint> K2, vec
    // cout << "triangulated points " << triangulated_point << endl;
     cv::Mat rgb_value(vec_match_point1.size(),1,CV_8UC3);
     for (int i=0; i<vec_match_point1.size(); i++) { //Interpolate The Pixel Value
-        Vec3i tmp1 =  img1.at<Vec3b>(vec_match_point1.at(i));
-        Vec3i tmp2 =  img2.at<Vec3b>(vec_match_point2.at(i));
+        Vec3i tmp1 =  img1.at<Vec3b>(vec_match_point11.at(i));
+        Vec3i tmp2 =  img2.at<Vec3b>(vec_match_point22.at(i));
         rgb_value.at<Vec3b>(i,0) = (tmp1 + tmp2)/2;
+      //  cout << " (tmp1 + tmp2)/2" <<  (tmp1 + tmp2)/2 << endl;
     }
     
     ofstream myfile;
@@ -396,6 +401,11 @@ void doTriangulation2Images(vector<cv::KeyPoint> K1,vector<cv::KeyPoint> K2, vec
         cv::Mat tmp1 = ((triangulated_point.col(i)).t())/triangulated_point.at<double>(3,i);
         myfile << tmp1.colRange(0, 3) << endl;
         myfile << rgb_value.row(i) << endl;
+      //  cout << "rgb_value " << rgb_value.row(i) << endl;
+        //Fill In 3D Point Correspondance
+        threeD_point_rgb.push_back(rgb_value.at<Vec3b>(i,0));
+        cv::Mat tmpMat = (tmp1.colRange(0, 3));
+        threeD_point_loc.push_back(tmpMat);
     }
     
     myfile.close();
