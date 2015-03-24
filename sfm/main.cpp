@@ -112,7 +112,7 @@ int main( int, char** argv )
  */
 void siftDetector( int, void* )
 {
-    cv::Ptr<Feature2D> f2d = xfeatures2d::SIFT::create(1000,3,0.04,10,1.6);
+    cv::Ptr<Feature2D> f2d = xfeatures2d::SIFT::create(5000,3,0.04,10,1.6);
     
     vector<cv::KeyPoint> keypoints[num_pic];
     cv::Mat mat_keypoints[num_pic];
@@ -137,17 +137,17 @@ void siftDetector( int, void* )
    // cv::Mat F = findF(keypoints[0], keypoints[1], good_matches);
    // cout << F << endl;
     
- //   vector<Point2d> vec_match_point1, vec_match_point2;
- //   findMatchingPoint(keypoints[0], keypoints[1], good_matches, &vec_match_point1, &vec_match_point2,NON_NORM);
+    vector<Point2d> vec_match_point1, vec_match_point2;
+    findMatchingPoint(keypoints[0], keypoints[1], good_matches, &vec_match_point1, &vec_match_point2,NON_NORM);
     
     
     
     cv::Mat E = findE(keypoints[0], keypoints[1], good_matches);
 
-    //  cv::Mat F = ((Kd.t()).inv())*E*(Kd.inv());
+      cv::Mat F = ((Kd.t()).inv())*E*(Kd.inv());
     
   //  cout << "F is " << F << endl;
-  //  drawEpilines(vec_match_point1, vec_match_point2, F,src[0],src[1]);
+    drawEpilines(vec_match_point1, vec_match_point2, F,src[0],src[1]);
   //  cout << "E  " << endl << E << endl;
     
     cv:Mat R1,R2,T,P2;
@@ -365,13 +365,13 @@ cv::Mat myLinearTriangulation(Point2d vec_point1, Point2d vec_point2,cv::Mat P, 
 void doTriangulation2Images(vector<cv::KeyPoint> K1,vector<cv::KeyPoint> K2, vector<DMatch> good_matches, cv::Mat img1, cv::Mat img2, cv::Mat P, cv::Mat P_prime)
 {
     vector<Point2d> vec_match_point1, vec_match_point2;
-    findMatchingPoint(K1, K2, good_matches, &vec_match_point1, &vec_match_point2,NON_NORM);
+    findMatchingPoint(K1, K2, good_matches, &vec_match_point1, &vec_match_point2,NORM);
     //P and P_prime is Normalized (Without Camera Intrinsic Info)
-    cv::Mat KP = Kd*P;
-    cv::Mat KP_prime = Kd*P_prime;
+//    cv::Mat KP = Kd*P;
+//    cv::Mat KP_prime = Kd*P_prime;
     
     cv::Mat triangulated_point;
-    triangulatePoints(KP, KP_prime, vec_match_point1, vec_match_point2, triangulated_point);
+    triangulatePoints(P, P_prime, vec_match_point1, vec_match_point2, triangulated_point);
    // cout << "triangulated points " << triangulated_point << endl;
     cv::Mat rgb_value(vec_match_point1.size(),1,CV_8UC3);
     for (int i=0; i<vec_match_point1.size(); i++) { //Interpolate The Pixel Value
@@ -389,7 +389,8 @@ void doTriangulation2Images(vector<cv::KeyPoint> K1,vector<cv::KeyPoint> K2, vec
     ofstream myfile;
     myfile.open("./plyFiles/img1_img2.ply");
     for (int i=0; i<vec_match_point1.size(); i++) {
-        myfile << (triangulated_point.col(i)).t() << endl;
+        cv::Mat tmp1 = ((triangulated_point.col(i)).t())/triangulated_point.at<double>(3,i);
+        myfile << tmp1.colRange(0, 3) << endl;
         myfile << rgb_value.row(i) << endl;
     }
     
@@ -408,8 +409,11 @@ void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint>
     
     double tmp1[2] = {vec_match_point1[0].x,vec_match_point1[0].y};
     double tmp2[2] = {vec_match_point2[0].x,vec_match_point2[0].y};
+    double test_point[4] = {0,0,1,1};
     cv::Mat mat_point1(1,1,CV_64FC2,tmp1);
     cv::Mat mat_point2(1,1,CV_64FC2,tmp2);
+    cv::Mat mat_test_point(4,1,CV_64FC1,test_point);
+
 
     cv::Mat I = Mat::eye(3, 3, CV_64FC1);
     cv::Mat P;
@@ -423,18 +427,15 @@ void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint>
     
     for (int i=0; i<4; i++) {
         cv::Mat t_point;
-     //   myLinearTriangulation(vec_match_point1.at(0), vec_match_point2.at(0), P, P_prime[i]);
-        triangulatePoints(P, P_prime[i], mat_point1, mat_point2, t_point);
-     //   cout << "t_point is " << endl << t_point << endl;
-        if ((t_point.at<double>(2,0)/t_point.at<double>(3, 0))>0) {
-            cv::Mat t_point_c2;
-            t_point_c2 = P_prime[i]*t_point;
-            if (t_point_c2.at<double>(2, 0)>0) {
+        cv::Mat t_point_c2 = P_prime[i]*mat_test_point;
+        if (t_point_c2.at<double>(2,0)>0) {
+            triangulatePoints(P, P_prime[i], mat_point1, mat_point2, t_point);
+            if ((t_point.at<double>(2,0)*t_point.at<double>(3, 0))>0) {
                 (P_prime[i]).copyTo(*P2);
                 cout << "P2 is" << *P2 << endl;
-              //  cout << "t_point2 " << t_point_c2 <<endl;
             }
         }
+
     }
 }
 
