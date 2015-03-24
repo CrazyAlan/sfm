@@ -10,11 +10,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448909842.929588"
+            timestampString = "448916737.090491"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "202"
-            endingLineNumber = "202">
+            startingLineNumber = "201"
+            endingLineNumber = "201">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -24,11 +24,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448909842.929588"
+            timestampString = "448916737.090491"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "244"
-            endingLineNumber = "244"
+            startingLineNumber = "243"
+            endingLineNumber = "243"
             landmarkName = "normCoord(vector&lt;cv::KeyPoint&gt; keypoints)"
             landmarkType = "7">
          </BreakpointContent>
@@ -40,11 +40,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448909842.929588"
+            timestampString = "448916737.090491"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "184"
-            endingLineNumber = "184"
+            startingLineNumber = "183"
+            endingLineNumber = "183"
             landmarkName = "siftDetector( int, void* )"
             landmarkType = "7">
          </BreakpointContent>
@@ -56,11 +56,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448909842.929588"
+            timestampString = "448916737.090491"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "259"
-            endingLineNumber = "259"
+            startingLineNumber = "258"
+            endingLineNumber = "258"
             landmarkName = "findMatchingPoint(vector&lt;KeyPoint&gt; K1, vector&lt;KeyPoint&gt; K2,vector&lt;DMatch&gt; good_matches, vector&lt;Point2d&gt; *match_point1, vector&lt;Point2d&gt; *match_point2,bool norm_flag)"
             landmarkType = "7">
          </BreakpointContent>
@@ -72,11 +72,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448909842.929588"
+            timestampString = "448916737.090491"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "293"
-            endingLineNumber = "293"
+            startingLineNumber = "292"
+            endingLineNumber = "292"
             landmarkName = "findF(vector&lt;cv::KeyPoint&gt; keypoints1,vector&lt;cv::KeyPoint&gt; keypoints2,vector&lt;DMatch&gt; good_matches)"
             landmarkType = "7">
          </BreakpointContent>
@@ -88,11 +88,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448909842.929588"
+            timestampString = "448916737.090491"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "194"
-            endingLineNumber = "194"
+            startingLineNumber = "193"
+            endingLineNumber = "193"
             landmarkName = "siftDetector( int, void* )"
             landmarkType = "7">
          </BreakpointContent>
@@ -104,11 +104,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448909842.929588"
+            timestampString = "448922787.061424"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "491"
-            endingLineNumber = "491"
+            startingLineNumber = "567"
+            endingLineNumber = "567"
             landmarkName = "ransac(vector&lt;DMatch&gt; good_matches, vector&lt;DMatch&gt;* inlier_matches, vector&lt;KeyPoint&gt; keypoint_1, vector&lt;KeyPoint&gt; keypoint_2)"
             landmarkType = "7">
          </BreakpointContent>
@@ -120,11 +120,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448909842.929588"
+            timestampString = "448914888.315695"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "139"
-            endingLineNumber = "139">
+            startingLineNumber = "118"
+            endingLineNumber = "118">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -134,11 +134,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448909842.929588"
+            timestampString = "448916737.090491"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "186"
-            endingLineNumber = "186"
+            startingLineNumber = "185"
+            endingLineNumber = "185"
             landmarkName = "siftDetector( int, void* )"
             landmarkType = "7">
          </BreakpointContent>
@@ -150,11 +150,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448909842.929588"
+            timestampString = "448914888.315695"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "132"
-            endingLineNumber = "132"
+            startingLineNumber = "111"
+            endingLineNumber = "111"
             landmarkName = "main( int, char** argv )"
             landmarkType = "7">
          </BreakpointContent>
@@ -166,11 +166,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448909842.929588"
+            timestampString = "448916737.090491"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "176"
-            endingLineNumber = "176"
+            startingLineNumber = "175"
+            endingLineNumber = "175"
             landmarkName = "siftDetector( int, void* )"
             landmarkType = "7">
          </BreakpointContent>
@@ -182,11 +182,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448909842.929588"
+            timestampString = "448914888.315695"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "171"
-            endingLineNumber = "171"
+            startingLineNumber = "150"
+            endingLineNumber = "150"
             landmarkName = "siftDetector( int, void* )"
             landmarkType = "7">
          </BreakpointContent>
@@ -198,11 +198,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448909842.929588"
+            timestampString = "448914888.315695"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "170"
-            endingLineNumber = "170"
+            startingLineNumber = "149"
+            endingLineNumber = "149"
             landmarkName = "siftDetector( int, void* )"
             landmarkType = "7">
          </BreakpointContent>
@@ -214,11 +214,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448909842.929588"
+            timestampString = "448916737.090491"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "397"
-            endingLineNumber = "397"
+            startingLineNumber = "396"
+            endingLineNumber = "396"
             landmarkName = "doTriangulation2Images(vector&lt;cv::KeyPoint&gt; K1,vector&lt;cv::KeyPoint&gt; K2, vector&lt;DMatch&gt; good_matches, cv::Mat img1, cv::Mat img2, cv::Mat P, cv::Mat P_prime)"
             landmarkType = "7">
          </BreakpointContent>
@@ -230,11 +230,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448909842.929588"
+            timestampString = "448916737.090491"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "394"
-            endingLineNumber = "394"
+            startingLineNumber = "393"
+            endingLineNumber = "393"
             landmarkName = "myLinearTriangulation(Point2d vec_point1, Point2d vec_point2,cv::Mat P, cv::Mat P_prime)"
             landmarkType = "7">
          </BreakpointContent>
@@ -246,12 +246,28 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448909842.929588"
+            timestampString = "448916737.090491"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "390"
-            endingLineNumber = "390"
+            startingLineNumber = "389"
+            endingLineNumber = "389"
             landmarkName = "myLinearTriangulation(Point2d vec_point1, Point2d vec_point2,cv::Mat P, cv::Mat P_prime)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "sfm/main.cpp"
+            timestampString = "448914888.315695"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "106"
+            endingLineNumber = "106"
+            landmarkName = "main( int, char** argv )"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -262,12 +278,28 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "448909842.929588"
+            timestampString = "448916737.090491"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "127"
-            endingLineNumber = "127"
-            landmarkName = "main( int, char** argv )"
+            startingLineNumber = "176"
+            endingLineNumber = "176"
+            landmarkName = "siftDetector( int, void* )"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "sfm/main.cpp"
+            timestampString = "448922787.061424"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "512"
+            endingLineNumber = "512"
+            landmarkName = "computePkUsing3D2D(int imgIdx1, int imgIdx2, vector&lt;DMatch&gt; good_matches, vector&lt;KeyPoint&gt; K1, vector&lt;KeyPoint&gt; K2, cv::Mat *Pk)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
