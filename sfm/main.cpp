@@ -63,7 +63,7 @@ cv::Mat board_coord = m_tmp.t();
 
 /// Function header
 void siftDetector( int, void* );
-void goodMatches(cv::Mat descriptor1, cv::Mat descriptor2,std::vector<DMatch>* good_matches);
+void goodMatches(cv::Mat descriptor1, cv::Mat descriptor2,std::vector<DMatch>* good_matches,float par1, float par2);
 vector<Point2d>  normCoord(vector<cv::KeyPoint> keypoints);
 void findMatchingPoint(vector<KeyPoint> K1, vector<KeyPoint> K2,vector<DMatch> good_matches, vector<Point2d> *match_point1, vector<Point2d> *match_point2, bool norm_flag);
 cv::Mat findE(vector<cv::KeyPoint> keypoints1,vector<cv::KeyPoint> keypoints2,vector<DMatch> good_matches);
@@ -75,6 +75,7 @@ cv::Mat myLinearTriangulation(Point2d vec_point1, Point2d vec_point2,cv::Mat P, 
 void doTriangulation2Images(vector<cv::KeyPoint> K1,vector<cv::KeyPoint> K2, vector<DMatch> good_matches, cv::Mat img1, cv::Mat img2, cv::Mat P, cv::Mat P_prime);
 void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint> K1, vector<cv::KeyPoint> K2, std::vector<DMatch> good_matches);
 cv::Mat findF(vector<cv::KeyPoint> keypoints1,vector<cv::KeyPoint> keypoints2,vector<DMatch> good_matches);
+void computeReconstructPoint(int imgIdx1, int imgIdx2, vector<DMatch> good_matches,vector<int> inliers);
 
 void drawEpilines(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F, cv::Mat src1, cv::Mat src2);
 void drawEpilinesHelper(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F, cv::Mat *img1, cv::Mat *img2);
@@ -99,8 +100,7 @@ int main( int, char** argv )
 {
     srand (time(NULL));
     K.convertTo(Kd, 6);
-    
-    
+
     /// Load source image and convert it to grayn
     for (int i=0; i<num_pic; i++) {
         src[i] = imread( argv[1+i], 1 );
@@ -131,7 +131,7 @@ void siftDetector( int, void* )
         f2d->compute(src_gray[i], keypoints[i], descriptor[i]);
     }
     for (int i=0; i<num_pic; i++) {
-        goodMatches(descriptor[i], descriptor[(i+1)%num_pic],&(good_matches[i]));
+        goodMatches(descriptor[i], descriptor[(i+1)%num_pic],&(good_matches[i]),2,0.02);
     }
     
     //Initializing Projection Mat
@@ -183,7 +183,7 @@ void siftDetector( int, void* )
  * @function goodMatches
  * @find Mathces
  */
-void goodMatches(cv::Mat descriptor1, cv::Mat descriptor2,std::vector<DMatch> *good_matches)
+void goodMatches(cv::Mat descriptor1, cv::Mat descriptor2,std::vector<DMatch> *good_matches,float par1, float par2)
 {
     //Feature Matching
     FlannBasedMatcher matcher;
@@ -201,7 +201,7 @@ void goodMatches(cv::Mat descriptor1, cv::Mat descriptor2,std::vector<DMatch> *g
     
     //Draw Good Matches
     for( int i = 0; i < descriptor1.rows; i++ )
-    { if( matches[i].distance <= max(2*min_dist, 0.02) )
+    { if( matches[i].distance <= max((par1*min_dist), 0.02) )
     { (*good_matches).push_back( matches[i]); }
     }
 }
@@ -411,6 +411,37 @@ void doTriangulation2Images(vector<cv::KeyPoint> K1,vector<cv::KeyPoint> K2, vec
     myfile.close();
 
   //  cout << "rgb value" << rgb_value << endl;
+}
+
+void computeReconstructPoint(int imgIdx1, int imgIdx2, vector<DMatch> good_matches,vector<int> inliers)
+{
+    int num = inliers.size();
+    unordered_map<int, int>::const_iterator got; //Find whether exiest point
+    
+    for (int i=0; i<num; i++) {
+        int inlierId = inliers.at(i);
+        int querId = good_matches.at(inlierId).queryIdx;
+        int trainId = good_matches.at(inlierId).trainIdx;
+        got = threeD_img2point_map[imgIdx1].find(querId);
+        if (got == threeD_img2point_map[imgIdx1].end()) {//Not Construct this point
+            //Add this point to point2img_map
+            unordered_map<int, int> tmp_point2img_map;
+            int tmp_points_reconstructed = threeD_point2img.size(); //Size is bigger than index by 1
+            tmp_point2img_map.insert({imgIdx1,querId});//Insert Query Img1 Info
+            tmp_point2img_map.insert({imgIdx2,trainId});
+            threeD_point2img.push_back(tmp_point2img_map);//Add this point back to Reconstructed Point
+            //Add this point to img2point_map
+            threeD_img2point_map[imgIdx1].insert({querId,tmp_points_reconstructed});// Sift feature Indx to Point Indx
+            threeD_img2point_map[imgIdx2].insert({trainId,tmp_points_reconstructed});// Sift feature Indx to Point Indx
+        }else //Already Constructed this point
+        { //Add Img2 Info to this point
+            int tmp_this_point_indx = got->second; //This sift feature's point Indx
+            threeD_img2point_map[imgIdx2].insert({trainId,tmp_this_point_indx});
+            //Update This point
+            threeD_point2img.at(tmp_this_point_indx).insert({imgIdx2,trainId});
+        }
+
+    }
 }
 
 void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint> K1, vector<cv::KeyPoint> K2, std::vector<DMatch> good_matches){
