@@ -152,7 +152,7 @@ void siftDetector( int, void* )
     cv:Mat R1,R2,T;
     decomposeEssentialMat(E, R1, R2, T);
     testRT(R1, R2, T, &P[1], keypoints[0], keypoints[1], good_matches[0]);
-    doTriangulation2Images(keypoints[0], keypoints[1], good_matches[0], src[0], src[1], P[0], P[1]); //First 2 images
+    doTriangulation2Images(keypoints[0], keypoints[1], good_matches[0], src[0], src[1], P[0], P[1]);
     cout << "threeDpointRGB  " << threeD_point_rgb.at(3) << endl;
     cout << "threeDpointLoc " << threeD_point_loc.at(3) << endl;
     cout << "threeDpointSize " << threeD_point_loc.size() << endl;
@@ -163,18 +163,20 @@ void siftDetector( int, void* )
     cout << "threeDpointsPointMapsize" << threeD_point2img[0].size() << endl;
     
     computePkUsing3D2D(1, 2, good_matches[1], keypoints[1], keypoints[2],&P[2]);
+    computeReconstructPoint(1, 2, good_matches[1], tmp_inliers);
     
     cout << "threeDpointsMapsize" << threeD_img2point_map[0].size() << endl;
     
-    cout << "New P2 is " << P[2] << endl;
+    cout << "New P2 is " << P[1] << endl;
     
     ofstream myfile;
     myfile.open("./plyFiles/threeDpointsMapsize.txt");
-    for (int i=0; i<threeD_point_loc.size(); i++) {
+    
+    for (int i=0; i<threeD_point_rgb.size(); i++) {
         myfile << threeD_point_loc.at(i)<< endl;
         myfile << threeD_point_rgb.at(i) << endl;
-
     }
+    
     myfile.close();
 
 
@@ -424,12 +426,12 @@ void doTriangulation2Images(vector<cv::KeyPoint> K1,vector<cv::KeyPoint> K2, vec
       //  cout << " (tmp1 + tmp2)/2" <<  (tmp1 + tmp2)/2 << endl;
     }
     
-  //  ofstream myfile;
-  //  myfile.open("./plyFiles/img1_img2.ply");
+ //   ofstream myfile;
+ //   myfile.open("./plyFiles/img1_img2.ply");
     for (int i=0; i<vec_match_point1.size(); i++) {
         cv::Mat tmp1 = ((triangulated_point.col(i)).t())/triangulated_point.at<double>(3,i);
-   //     myfile << tmp1.colRange(0, 3) << endl;
-  //      myfile << rgb_value.row(i) << endl;
+//        myfile << tmp1.colRange(0, 3) << endl;
+//        myfile << rgb_value.row(i) << endl;
       //  cout << "rgb_value " << rgb_value.row(i) << endl;
         //Fill In 3D Point Correspondance
         threeD_point_rgb.push_back(rgb_value.at<Vec3b>(i,0));
@@ -437,10 +439,12 @@ void doTriangulation2Images(vector<cv::KeyPoint> K1,vector<cv::KeyPoint> K2, vec
         threeD_point_loc.push_back(tmpMat);
     }
     
-   // myfile.close();
+ //   myfile.close();
 
   //  cout << "rgb value" << rgb_value << endl;
 }
+
+
 
 void computeReconstructPoint(int imgIdx1, int imgIdx2, vector<DMatch> good_matches,vector<int> inliers)
 {
@@ -452,13 +456,13 @@ void computeReconstructPoint(int imgIdx1, int imgIdx2, vector<DMatch> good_match
     }
     
     int num = inliers.size();
-    unordered_map<int, int>::const_iterator got; //Find whether exiest point
+    // got; //Find whether exiest point
     
     for (int i=0; i<num; i++) {
         int inlierId = inliers.at(i);
         int querId = good_matches.at(inlierId).queryIdx;
         int trainId = good_matches.at(inlierId).trainIdx;
-        got = threeD_img2point_map[imgIdx1].find(querId);
+       unordered_map<int, int>::const_iterator got = threeD_img2point_map[imgIdx1].find(querId);
         if (got == threeD_img2point_map[imgIdx1].end()) {//Not Construct this point
             //Add this point to point2img_map
             unordered_map<int, int> tmp_point2img_map;
@@ -486,12 +490,12 @@ void computePkUsing3D2D(int imgIdx1, int imgIdx2, vector<DMatch> good_matches, v
     int num = good_matches.size();
     vector<Point3f> vec_reconstructed_point;
     vector<Point2f> vec_img2_point;
-    unordered_map<int, int>::const_iterator got; //Find whether exiest point
+    // got; //Find whether exiest point
     
     for (int i=0; i<num; i++) {
         int querId = good_matches.at(i).queryIdx;// imgIdx1 Sift Keypoints
         int trainId = good_matches.at(i).trainIdx;//ImgIdx2 Sift Keypoints
-        got = threeD_img2point_map[imgIdx1].find(querId);
+        unordered_map<int, int>::const_iterator got = threeD_img2point_map[imgIdx1].find(querId);
         
         if (got == threeD_img2point_map[imgIdx1].end() ) { //Not find the point
             //Do nothing
@@ -522,16 +526,20 @@ void computePkUsing3D2D(int imgIdx1, int imgIdx2, vector<DMatch> good_matches, v
     //Get Pk
     tmp_Pk.copyTo(*Pk);
     
-    cout << "Pk is " << P[imgIdx2] << endl;
+    cout << "Pk is " << tmp_Pk << endl;
  //   cout << "Inlier is " << inlier_mask << endl;
+    
+    //Update 3D point Map
+    //computeReconstructPoint(imgIdx1, imgIdx2, good_matches, inlier_mask);
+
     
     //Do 3D point Update After Knowing Pk, Only Do for inliers
     for (int i=0; i<num; i++) { //Good Mathes Number
         int querId = good_matches.at(i).queryIdx;// imgIdx1 Sift Keypoints
         int trainId = good_matches.at(i).trainIdx;//ImgIdx2 Sift Keypoints
-        got = threeD_img2point_map[imgIdx1].find(querId);
+       unordered_map<int, int>::const_iterator got2 = threeD_img2point_map[imgIdx1].find(querId);
         
-        if (got == threeD_img2point_map[imgIdx1].end() ) { //Not find the point
+        if (got2 == threeD_img2point_map[imgIdx1].end()) { //Not find the point
             //Triangulate this point using Pk and previous image
             vector<KeyPoint> key1point;
             Point2f key1_p2f = K1.at(querId).pt;
@@ -557,14 +565,11 @@ void computePkUsing3D2D(int imgIdx1, int imgIdx2, vector<DMatch> good_matches, v
             cout << "Creat New point " << threeD_point_rgb.size() << endl;
         }else
         {
-            int tmp_reconstructed_point_indx = got->second;// 3D point Indx
-           // cout <<
+           // int tmp_reconstructed_point_indx = got->second;// 3D point Indx
+         //   cout << "tmp_reconstructed_point_indx " << tmp_reconstructed_point_indx << endl;
             //Do multi triangulation
         }
     }
-    
-    
-    
 }
 
 void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint> K1, vector<cv::KeyPoint> K2, std::vector<DMatch> good_matches){
