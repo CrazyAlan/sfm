@@ -66,6 +66,22 @@
             argument = "./fountain-P11/0001.jpg"
             isEnabled = "YES">
          </CommandLineArgument>
+         <CommandLineArgument
+            argument = "./fountain-P11/0002.jpg"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "./fountain-P11/0003.jpg"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "./fountain-P11/0004.jpg"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "./fountain-P11/0005.jpg"
+            isEnabled = "YES">
+         </CommandLineArgument>
       </CommandLineArguments>
       <AdditionalOptions>
       </AdditionalOptions>

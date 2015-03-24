@@ -10,9 +10,13 @@
 #include <stdlib.h>
 #include <time.h>
 #include <fstream>
+#include <unordered_map>
 
 
 #include "ceres_optimization.h"
+#include "ceres/ceres.h"
+#include "glog/logging.h"
+
 using namespace cv;
 using namespace std;
 using namespace cv::xfeatures2d;
@@ -20,14 +24,17 @@ using namespace cv::xfeatures2d;
 
 
 /// Global variables
-cv::Mat src[4], src_gray[4];
 float k[3][3] = {{1077.9,0,594.0},{0,1077.9,393.3},{0,0,1}};
 cv::Mat K(3,3,CV_32FC1,k); //Camera Matrix
 cv::Mat Kd(3,3,CV_64FC1,Scalar::all(0));
+const int num_pic = 3;
+cv::Mat src[num_pic], src_gray[num_pic];
+//Initializing Hash Table For correspondence
+vector<std::unordered_map<int, int>> threeD_point2img;
+vector<Vec3b> threeD_point_rgb;
+vector<cv::Mat> threeD_point_loc;
+std::unordered_map<int, int> threeD_img2point_map[num_pic]; //Number of imgs
 
-
-
-const int num_pic = 2;
 
 const char* source_window = "Source image";
 const char* corners_window = "Sift detected";
@@ -83,6 +90,7 @@ void getImgNSrcCoord(cv::Mat H, cv::Mat *img_coord, cv::Mat *out_img_coord);
 void ransac(vector<DMatch> good_matches, vector<DMatch>* inlier_matches, vector<KeyPoint> keypoint_1, vector<KeyPoint> keypoint_2);
 void randomArray(int size, int range, int *array);
 
+
 /**
  * @function main
  */
@@ -92,12 +100,12 @@ int main( int, char** argv )
     srand (time(NULL));
     K.convertTo(Kd, 6);
     
+    
     /// Load source image and convert it to grayn
     for (int i=0; i<num_pic; i++) {
         src[i] = imread( argv[1+i], 1 );
         cvtColor( src[i], src_gray[i], COLOR_BGR2GRAY );
     }
-    
     
     siftDetector( 0, 0 );
     
@@ -112,56 +120,60 @@ int main( int, char** argv )
  */
 void siftDetector( int, void* )
 {
-    cv::Ptr<Feature2D> f2d = xfeatures2d::SIFT::create(1000,3,0.04,10,1.6);
-    
+    cv::Ptr<Feature2D> f2d = xfeatures2d::SIFT::create(5000,3,0.04,10,1.6);
     vector<cv::KeyPoint> keypoints[num_pic];
     cv::Mat mat_keypoints[num_pic];
     cv::Mat descriptor[num_pic];
+    vector<DMatch> good_matches[num_pic];
     cv::Mat out_img[num_pic];
     for (int i=0; i<num_pic; i++) {
         f2d->detect(src_gray[i], keypoints[i]);
         f2d->compute(src_gray[i], keypoints[i], descriptor[i]);
     }
+    for (int i=0; i<num_pic; i++) {
+        goodMatches(descriptor[i], descriptor[(i+1)%num_pic],&(good_matches[i]));
+    }
     
+    //Initializing Projection Mat
+    cv::Mat P[num_pic];
+    cv::Mat I = Mat::eye(3, 3, CV_64FC1);
+    hconcat(I, cv::Mat(3,1,CV_64FC1,Scalar::all(0)), P[0]);
+    
+    cout << "Good Matches  " << good_matches[1].size() << endl;
+    
+    //Do 2 Images Triangulation
+    cv::Mat E = findE(keypoints[0], keypoints[1], good_matches[1]);
+    cv:Mat R1,R2,T;
+    decomposeEssentialMat(E, R1, R2, T);
+    testRT(R1, R2, T, &P[1], keypoints[0], keypoints[1], good_matches[0]);
+    doTriangulation2Images(keypoints[0], keypoints[1], good_matches[0], src[0], src[1], P[0], P[1]);
+    
+
 //    //Draw Sift Keypoints
 //    Mat img_keypoints_1;
 //    drawKeypoints(src_gray[0], keypoints[0], img_keypoints_1);
 //    imshow("Keypoints 1", img_keypoints_1);
-    
-    
-    vector<DMatch> good_matches;
-    goodMatches(descriptor[0], descriptor[1],&good_matches);
-    cout << "Good Matches  " << good_matches.size() << endl;
+
     
     //Find Fundamental Matrix
-   // cv::Mat F = findF(keypoints[0], keypoints[1], good_matches);
+  //  cv::Mat F = findF(keypoints[0], keypoints[1], good_matches[0]);
    // cout << F << endl;
     
- //   vector<Point2d> vec_match_point1, vec_match_point2;
- //   findMatchingPoint(keypoints[0], keypoints[1], good_matches, &vec_match_point1, &vec_match_point2,NON_NORM);
+    vector<Point2d> vec_match_point1, vec_match_point2;
+    findMatchingPoint(keypoints[0], keypoints[1], good_matches[0], &vec_match_point1, &vec_match_point2,NON_NORM);
     
     
     
-    cv::Mat E = findE(keypoints[0], keypoints[1], good_matches);
 
-    //  cv::Mat F = ((Kd.t()).inv())*E*(Kd.inv());
+      cv::Mat F = ((Kd.t()).inv())*E*(Kd.inv());
     
   //  cout << "F is " << F << endl;
-  //  drawEpilines(vec_match_point1, vec_match_point2, F,src[0],src[1]);
+    drawEpilines(vec_match_point1, vec_match_point2, F,src[0],src[1]);
   //  cout << "E  " << endl << E << endl;
     
-    cv:Mat R1,R2,T,P2;
-    decomposeEssentialMat(E, R1, R2, T);
-    testRT(R1, R2, T, &P2, keypoints[0], keypoints[1], good_matches);
-    
-    cv::Mat I = Mat::eye(3, 3, CV_64FC1);
-    cv::Mat P;
-    hconcat(I, cv::Mat(3,1,CV_64FC1,Scalar::all(0)), P);
-    
-    doTriangulation2Images(keypoints[0], keypoints[1], good_matches, src[0], src[1], P, P2);
     
     Mat img_matches;
-    drawMatches(src_gray[0], keypoints[0], src_gray[1], keypoints[1], good_matches, img_matches);
+    drawMatches(src_gray[0], keypoints[0], src_gray[1], keypoints[1], good_matches[0], img_matches);
     
     resize(img_matches, img_matches, Size(img_matches.cols/2,img_matches.rows/2));
     imshow( "Good Matches", img_matches );
@@ -191,7 +203,7 @@ void goodMatches(cv::Mat descriptor1, cv::Mat descriptor2,std::vector<DMatch> *g
     
     //Draw Good Matches
     for( int i = 0; i < descriptor1.rows; i++ )
-    { if( matches[i].distance <= max(2*min_dist, 0.02) )
+    { if( matches[i].distance <= max(3*min_dist, 0.05) )
     { (*good_matches).push_back( matches[i]); }
     }
 }
@@ -372,28 +384,28 @@ void doTriangulation2Images(vector<cv::KeyPoint> K1,vector<cv::KeyPoint> K2, vec
     
     cv::Mat triangulated_point;
     triangulatePoints(KP, KP_prime, vec_match_point1, vec_match_point2, triangulated_point);
+   // triangulated_point = Kd.inv() * triangulated_point;
    // cout << "triangulated points " << triangulated_point << endl;
     cv::Mat rgb_value(vec_match_point1.size(),1,CV_8UC3);
     for (int i=0; i<vec_match_point1.size(); i++) { //Interpolate The Pixel Value
-        
-       // cout << "img 1" << img1.at<Vec3b>(vec_match_point1.at(i)) << endl;
-       // cout << "img 2" << img2.at<Vec3b>(vec_match_point2.at(i)) << endl;
-        
         Vec3i tmp1 =  img1.at<Vec3b>(vec_match_point1.at(i));
         Vec3i tmp2 =  img2.at<Vec3b>(vec_match_point2.at(i));
         rgb_value.at<Vec3b>(i,0) = (tmp1 + tmp2)/2;
-       // cout << "tmp " << rgb_value.at<Vec3b>(i,0) <<  endl;
-
     }
-    
     ofstream myfile;
     myfile.open("./plyFiles/img1_img2.ply");
     for (int i=0; i<vec_match_point1.size(); i++) {
-        myfile << (triangulated_point.col(i)).t() << endl;
+        cv::Mat tmp1 = ((triangulated_point.col(i)).t())/triangulated_point.at<double>(3,i);
+       // cout << "(triangulated_point.col(i)).t()" << (triangulated_point.col(i)).t() << endl;
+        myfile << tmp1.colRange(0, 3) << endl;
         myfile << rgb_value.row(i) << endl;
+        //Fill In 3D Point Correspondance
+        threeD_point_rgb.push_back(rgb_value.at<Vec3b>(i,0));
+        cv::Mat tmpMat = ((triangulated_point.col(i)).t());
+        threeD_point_loc.push_back(tmpMat);
+    //  cout << "threeD_point[i].point_rgb" << threeD_point_rgb.at(i) << endl;
+    //  cout << "threeD_point[i].point_loc" << threeD_point_loc.at(i) <<endl;
     }
-    
-    
     myfile.close();
 
   //  cout << "rgb value" << rgb_value << endl;
@@ -408,8 +420,10 @@ void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint>
     
     double tmp1[2] = {vec_match_point1[0].x,vec_match_point1[0].y};
     double tmp2[2] = {vec_match_point2[0].x,vec_match_point2[0].y};
+    double test_point[4] = {0,0,1,1};
     cv::Mat mat_point1(1,1,CV_64FC2,tmp1);
     cv::Mat mat_point2(1,1,CV_64FC2,tmp2);
+    cv::Mat mat_test_point(4,1,CV_64FC1,test_point);
 
     cv::Mat I = Mat::eye(3, 3, CV_64FC1);
     cv::Mat P;
@@ -422,13 +436,14 @@ void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint>
     hconcat(R2, -1*T, P_prime[3]);
     
     for (int i=0; i<4; i++) {
+    
+     //   cv::Mat t_point = myLinearTriangulation(vec_match_point1.at(0), vec_match_point2.at(0), P, P_prime[i]);
         cv::Mat t_point;
-     //   myLinearTriangulation(vec_match_point1.at(0), vec_match_point2.at(0), P, P_prime[i]);
         triangulatePoints(P, P_prime[i], mat_point1, mat_point2, t_point);
      //   cout << "t_point is " << endl << t_point << endl;
         if ((t_point.at<double>(2,0)/t_point.at<double>(3, 0))>0) {
             cv::Mat t_point_c2;
-            t_point_c2 = P_prime[i]*t_point;
+            t_point_c2 = P_prime[i]*mat_test_point;
             if (t_point_c2.at<double>(2, 0)>0) {
                 (P_prime[i]).copyTo(*P2);
                 cout << "P2 is" << *P2 << endl;
