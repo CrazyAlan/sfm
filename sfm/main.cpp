@@ -465,7 +465,7 @@ void doMulTriangulation(int imgIdx1, int imgIdx2, vector<DMatch> good_matches,  
         key1point.clear();
         key2point.clear();
         cv::Mat triangulated_point;
-        cv::Mat rgb_value(3,1,CV_8UC3);
+        cv::Mat rgb_value(1,1,CV_8UC3);
         
         if (got == threeD_img2point_map[imgIdx1].end()) { //Not find the point
             //Triangulate this point using Pk and previous image
@@ -481,15 +481,18 @@ void doMulTriangulation(int imgIdx1, int imgIdx2, vector<DMatch> good_matches,  
             
             Vec3i tmp1 =  src[imgIdx1].at<Vec3b>(key1_p2f);
             Vec3i tmp2 =  src[imgIdx2].at<Vec3b>(key2_p2f);
-            rgb_value.at<Vec3b>(i,0) = (tmp1 + tmp2)/2;
+            rgb_value.at<Vec3b>(0,0) = (tmp1 + tmp2)/2;
+
+            cout << "tmp1" << tmp1 << tmp2 <<  endl;
             
             cv::Mat tmp_mat_1 = ((triangulated_point.col(0)).t())/triangulated_point.at<double>(3,0);
             threeD_point_rgb.push_back(rgb_value.at<Vec3b>(0,0));
+            
+            cout << "rgb_value.at<Vec3b>(0,0)" << rgb_value.at<Vec3b>(0,0) << endl;
             cv::Mat tmpMat = (tmp_mat_1.colRange(0, 3));
             threeD_point_loc.push_back(tmpMat);
             tmpMat.release();
             tmp_mat_1.release();
-            cout << "Creat New point " << threeD_point_rgb.size() << endl;
         }else
         {
             cout << "Update Point " << got->second << endl;
