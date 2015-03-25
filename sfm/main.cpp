@@ -74,6 +74,8 @@ void findMatchingPoint(vector<KeyPoint> K1, vector<KeyPoint> K2,vector<DMatch> g
 cv::Mat findE(vector<cv::KeyPoint> keypoints1,vector<cv::KeyPoint> keypoints2,vector<DMatch> good_matches);
 void convertP2DtoMat(vector<Point2d> point, cv::Mat *mat_point);
 void convertP2DtoMat(Point2d point, cv::Mat *mat_point);
+void convertP3ftoMat(vector<Point3f> point, cv::Mat *mat_point);
+
 void convertVec2CrossMat(cv::Mat vec_origin, cv::Mat *cross_mat);
 
 cv::Mat myLinearTriangulation(Point2d vec_point1, Point2d vec_point2,cv::Mat P, cv::Mat P_prime);
@@ -83,6 +85,7 @@ void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint>
 cv::Mat findF(vector<cv::KeyPoint> keypoints1,vector<cv::KeyPoint> keypoints2,vector<DMatch> good_matches);
 void computeReconstructPoint(int imgIdx1, int imgIdx2, vector<DMatch> good_matches,vector<int> inliers);
 void computePkUsing3D2D(int imgIdx1, int imgIdx2, vector<DMatch> good_matches, vector<KeyPoint> K1, vector<KeyPoint> K2,  cv::Mat *Pk);
+void doRansacChooseInlier(vector<Point3f> vec_reconstructed_point, vector<Point2f> vec_img2_point, cv::Mat Pk, vector<int> inliers);
 
 void drawEpilines(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F, cv::Mat src1, cv::Mat src2);
 void drawEpilinesHelper(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F, cv::Mat *img1, cv::Mat *img2);
@@ -138,8 +141,11 @@ void siftDetector( int, void* )
         f2d->detect(src_gray[i], keypoints[i]);
         f2d->compute(src_gray[i], keypoints[i], descriptor[i]);
     }
-    for (int i=0; i<num_pic; i++) {
-        goodMatches(descriptor[i], descriptor[(i+1)%num_pic],&(good_matches[i]),2,0.02);
+    
+    goodMatches(descriptor[0], descriptor[1],&(good_matches[0]),2,0.02);
+
+    for (int i=1; i<num_pic; i++) {
+        goodMatches(descriptor[i], descriptor[(i+1)%num_pic],&(good_matches[i]),3,0.02);
     }
     
     //Initializing Projection Mat
@@ -317,6 +323,32 @@ void convertP2DtoMat(vector<Point2d> point, cv::Mat *mat_point)
         (*mat_point).at<double>(2,i) = (double)1.0;
     }
 }
+
+void convertP3ftoMat(vector<Point3f> point, cv::Mat *mat_point)
+{
+    int num = point.size();
+    for (int i=0; i<num; i++) {
+        (*mat_point).at<double>(0,i) = (double)point.at(i).x;
+        (*mat_point).at<double>(1,i) = (double)point.at(i).y;
+        (*mat_point).at<double>(2,i) = (double)point.at(i).z;
+        (*mat_point).at<double>(3,i) = (double) 1.0;
+    }
+    //tmp_mat_point.release();
+
+}
+
+void convertMat3Dto2f(cv::Mat mat_point, vector<Point2f> *vec_point)
+{
+    int num = mat_point.cols;
+    for (int i=0; i<num; i++) {
+        Point2f tmp2f;
+        tmp2f.x = (float)(mat_point.at<double>(0, i)/mat_point.at<double>(2,i));
+        tmp2f.y = (float)(mat_point.at<double>(1, i)/mat_point.at<double>(2,i));
+        (*vec_point).push_back(tmp2f);
+    }
+}
+
+
 
 void convertP2DtoMat(Point2d point, cv::Mat *mat_point)
 {
@@ -580,7 +612,7 @@ void computePkUsing3D2D(int imgIdx1, int imgIdx2, vector<DMatch> good_matches, v
     vector<int> inlier_mask;
    // mat_reconstructed_point.convertTo(vec_reconstructed_point, 5);
     solvePnPRansac(vec_reconstructed_point, vec_img2_point, K, noArray(), tmp_R, tmp_T);
-   // float rError = 8.0;
+    // float rError = 8.0;
   // solvePnPRansac(vec_reconstructed_point, vec_img2_point, K, noArray(), tmp_R, tmp_T,false,50, 100, 100,inlier_mask,CV_ITERATIVE);
     Rodrigues(tmp_R,tmp_R,noArray());
     cv::Mat tmp_Pk ;
@@ -589,7 +621,12 @@ void computePkUsing3D2D(int imgIdx1, int imgIdx2, vector<DMatch> good_matches, v
     tmp_Pk.copyTo(*Pk);
     tmp_T.release();tmp_R.release();
     
+    //Using Pk to compute Inliers
+    
+    
     cout << "Pk is " << tmp_Pk << endl;
+    
+    doRansacChooseInlier(vec_reconstructed_point, vec_img2_point, (*Pk), inlier_mask);
  //   cout << "Inlier is " << inlier_mask << endl;
     
     //Update 3D point Map
@@ -600,6 +637,31 @@ void computePkUsing3D2D(int imgIdx1, int imgIdx2, vector<DMatch> good_matches, v
     computeReconstructPoint(imgIdx1, imgIdx2, good_matches, inlier_mask);
 
     
+}
+
+void doRansacChooseInlier(vector<Point3f> vec_reconstructed_point, vector<Point2f> vec_img2_point, cv::Mat Pk, vector<int> inliers)
+{
+    cv::Mat mat_point(4,vec_reconstructed_point.size(),CV_64FC1);
+    convertP3ftoMat(vec_reconstructed_point, &mat_point);
+    cv::Mat mat_img2_point = Kd*Pk*mat_point;
+    vector<Point2f> vec_img2_hat;
+    convertMat3Dto2f(mat_img2_point, &vec_img2_hat);
+    
+    for (int i=0; i<vec_reconstructed_point.size() ; i++) {
+    //    cout << "img_hat" << vec_img2_hat.at(i) << endl;
+    //    cout << "img" << vec_img2_point.at(i) << endl;
+    //    cout << "deduce " << (vec_img2_hat.at(i)-vec_img2_point.at(i)) << endl;
+        Point2f tmp2f = (vec_img2_hat.at(i)-vec_img2_point.at(i));
+        float judge = (tmp2f.x)*(tmp2f.x) + (tmp2f.y)*(tmp2f.y);
+        if (judge < 0.2) {
+            inliers.push_back(i);
+            cout << "judge " << judge << endl;
+        }else{
+            cout << "outLiers " << endl;
+        }
+    }
+    mat_point.release();
+    mat_img2_point.release();
 }
 
 void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint> K1, vector<cv::KeyPoint> K2, std::vector<DMatch> good_matches){
