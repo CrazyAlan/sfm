@@ -75,20 +75,25 @@ cv::Mat findE(vector<cv::KeyPoint> keypoints1,vector<cv::KeyPoint> keypoints2,ve
 void convertP2DtoMat(vector<Point2d> point, cv::Mat *mat_point);
 void convertP2DtoMat(Point2d point, cv::Mat *mat_point);
 void convertP3ftoMat(vector<Point3f> point, cv::Mat *mat_point);
-
+void convertP2fToP2d(vector<Point2f> src, vector<Point2d> *dst);
 void convertVec2CrossMat(cv::Mat vec_origin, cv::Mat *cross_mat);
 
+double computeProjectPointError(cv::Mat Pk, Point2d point, cv::Mat point_4D);
 cv::Mat myLinearTriangulation(Point2d vec_point1, Point2d vec_point2,cv::Mat P, cv::Mat P_prime);
+bool ransacTriangulation(cv::Mat P1, cv::Mat P2, vector<Point2f> vec_key_point_1, vector<Point2f> vec_key_point_2, cv::Mat  *triangulated_point);
+
+double computeProjectPointError(cv::Mat Pk, Point2d point, cv::Mat point_4D);
 void doTriangulation2Images(vector<cv::KeyPoint> K1,vector<cv::KeyPoint> K2, vector<DMatch> good_matches, cv::Mat img1, cv::Mat img2, cv::Mat P, cv::Mat P_prime);
 void doMulTriangulation(int imgIdx1, int imgIdx2, vector<DMatch> good_matches, vector<KeyPoint> K1, vector<KeyPoint> K2, vector<int> inlier_mask);
 void testRT(cv::Mat R1, cv::Mat R2, cv::Mat T, cv::Mat *P2, vector<cv::KeyPoint> K1, vector<cv::KeyPoint> K2, std::vector<DMatch> good_matches);
 cv::Mat findF(vector<cv::KeyPoint> keypoints1,vector<cv::KeyPoint> keypoints2,vector<DMatch> good_matches);
 void computeReconstructPoint(int imgIdx1, int imgIdx2, vector<DMatch> good_matches,vector<int> inliers);
 void computePkUsing3D2D(int imgIdx1, int imgIdx2, vector<DMatch> good_matches, vector<KeyPoint> K1, vector<KeyPoint> K2,  cv::Mat *Pk);
-void doRansacChooseInlier(vector<Point3f> vec_reconstructed_point, vector<Point2f> vec_img2_point, cv::Mat Pk, vector<int> inliers);
+void doRansacChooseInlier(vector<Point3f> vec_reconstructed_point, vector<Point2f> vec_img2_point, cv::Mat Pk, vector<int> *inliers);
 
 void drawEpilines(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F, cv::Mat src1, cv::Mat src2);
 void drawEpilinesHelper(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F, cv::Mat *img1, cv::Mat *img2);
+void convertMat3Dto2d(cv::Mat mat_point, vector<Point2d> *vec_point);
 
 cv::Mat buildA(std::vector<KeyPoint> keypoint_1, std::vector<KeyPoint> keypoint_2, std::vector<DMatch> good_matches);
 cv::Mat buildCoord(int x_min, int x_max, int y_min, int y_max);
@@ -348,6 +353,25 @@ void convertMat3Dto2f(cv::Mat mat_point, vector<Point2f> *vec_point)
     }
 }
 
+void convertMat3Dto2d(cv::Mat mat_point, vector<Point2d> *vec_point)
+{
+    int num = mat_point.cols;
+    for (int i=0; i<num; i++) {
+        Point2d tmp2d;
+        tmp2d.x = (mat_point.at<double>(0, i)/mat_point.at<double>(2,i));
+        tmp2d.y = (mat_point.at<double>(1, i)/mat_point.at<double>(2,i));
+        (*vec_point).push_back(tmp2d);
+    }
+}
+
+void convertP2fToP2d(vector<Point2f> src, vector<Point2d> *dst){
+    for (int i=0; i<src.size(); i++) {
+        Point2d tmp2d;
+        tmp2d.x = (double) src.at(i).x;
+        tmp2d.y = (double) src.at(i).y;
+        (*dst).push_back(tmp2d);
+    }
+}
 
 
 void convertP2DtoMat(Point2d point, cv::Mat *mat_point)
@@ -412,6 +436,16 @@ void drawEpilines(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F, c
     imshow("img2", img2);
 }
 
+double computeProjectPointError(cv::Mat Pk, Point2d point, cv::Mat point_4D){
+    cv::Mat reconstructed_point = Pk*point_4D;
+    vector<Point2d> vec_point;
+    convertMat3Dto2d(reconstructed_point, &vec_point);
+    
+    Point2d tmp = point - vec_point.at(0);
+    double err = pow(tmp.x, 2) + pow(tmp.y, 2);
+    return err;
+}
+
 cv::Mat myLinearTriangulation(Point2d vec_point1, Point2d vec_point2,cv::Mat P, cv::Mat P_prime) //Using Non-Normalized Coordinate
 {
     cv::Mat ho_point1(3,1,CV_64FC1);
@@ -437,6 +471,115 @@ cv::Mat myLinearTriangulation(Point2d vec_point1, Point2d vec_point2,cv::Mat P, 
     cv::Mat X_hat((vt.t()).col(3));
     cout << "Vt " << vt.t().col(3) << endl;
     return X_hat;
+}
+
+cv::Mat myMulTriangulation(int pointIdx)
+{
+    cv::Mat mat_reconstructed_point;
+    
+    std::unordered_map<int,int>::iterator got;
+    vector<int> imgs;
+    vector<int> points;
+    vector<KeyPoint> points_loc;
+    vector<cv::Mat> rnd_P;
+    cv::Mat P_best;
+    
+    for (int i=0; i<11; i++) { //11 Images
+        got = threeD_point2img.at(pointIdx).find(i);
+        if (got != threeD_point2img.at(pointIdx).end()) {
+            int keypointIdx = threeD_point2img.at(pointIdx).at(i);
+            imgs.push_back(i);
+            points.push_back(keypointIdx);
+            KeyPoint tmp2k = keypoints[i].at(keypointIdx);// The point in that image
+            points_loc.push_back(tmp2k);
+            rnd_P.push_back(P[i]);
+        }
+    }
+    
+    vector<Point2d> points_loc_2d = normCoord(points_loc);
+    int num_imgs = imgs.size();
+    
+    Point2d rnd_poin[2];
+    double error_thresh_hold = 0.02;
+    double tmp_err = 0;
+    int most_inliers = 0;
+    int good_p_indx[2];
+    
+    for (int i=0; i<(num_imgs*num_imgs); i++) { //ransac times 100
+        int rnd_array[2];
+        int tmp_inliers = 0;
+        randomArray(2, num_imgs, rnd_array);
+        cv::Mat rnd_points_loc = myLinearTriangulation(points_loc_2d.at(rnd_array[0]), points_loc_2d.at(rnd_array[1]),rnd_P.at(rnd_array[0]) , rnd_P.at(rnd_array[1]));
+
+        for (int j=0; j<num_imgs ; j++) {
+            if ((j!=rnd_array[0])&&(j!=rnd_array[1])) {
+                tmp_err = computeProjectPointError(rnd_P.at(j), points_loc_2d.at(j), rnd_points_loc);
+                if (tmp_err < error_thresh_hold) {
+                    tmp_inliers +=1; //Inliers Count
+                }
+            }
+        }
+        if (tmp_inliers > most_inliers) {
+            good_p_indx[0] = rnd_array[0];
+            good_p_indx[1] = rnd_array[1];
+        }
+    }
+    
+    cv::Mat ho_point1(3,1,CV_64FC1);
+    cv::Mat ho_point2(3,1,CV_64FC1);
+    //  cout << "vec_point1 " << endl << vec_point1 << endl;
+    //  cout << "ho_point1 " << endl << ho_point1 << endl;
+    
+    convertP2DtoMat(vec_point1,&ho_point1); //3*N
+    convertP2DtoMat(vec_point2, &ho_point2); //3*N
+    cv::Mat A1,A2,A;
+    cv::Mat cross_mat1(3,3,CV_64FC1);
+    cv::Mat cross_mat2(3,3,CV_64FC1);
+    convertVec2CrossMat(ho_point1, &cross_mat1);
+    convertVec2CrossMat(ho_point2, &cross_mat2);
+    
+    // cout << "P is " << endl << P << endl;
+    A1 = cross_mat1*P;
+    A2 = cross_mat2*P_prime;
+    
+    vconcat(A1, A2, A);
+    cv::Mat w,u,vt;
+    SVD::compute(A.t()*A, w, u, vt);
+    cv::Mat X_hat((vt.t()).col(3));
+    cout << "Vt " << vt.t().col(3) << endl;
+    
+    return mat_reconstructed_point;
+}
+
+bool ransacTriangulation(cv::Mat P1, cv::Mat P2, vector<Point2d> vec_key_point_1, vector<Point2d> vec_key_point_2, cv::Mat  *triangulated_point)
+{
+    bool inlier = false;
+    triangulatePoints(P1, P2, vec_key_point_1, vec_key_point_2, *triangulated_point);
+    
+    cv::Mat mat_tmp_point1 = P1*(*triangulated_point);
+    cv::Mat mat_tmp_point2 = P2*(*triangulated_point);
+    
+    vector<Point2d> vec_point_1_hat,vec_point_2_hat;
+    convertMat3Dto2d(mat_tmp_point1, &vec_point_1_hat);
+    convertMat3Dto2d(mat_tmp_point2, &vec_point_2_hat);
+    
+  //  cout << "vec 1 pont hat" << vec_point_1_hat.at(0) << endl;
+  //  cout << "vec 1 pont " << vec_key_point_1.at(0) << endl;
+
+    Point2d tmp2d1 =  vec_key_point_1.at(0) - vec_point_1_hat.at(0);
+    Point2d tmp2d2 = vec_key_point_2.at(0) - vec_point_2_hat.at(0);
+    
+    float err1 = pow(tmp2d1.x, 2) + pow(tmp2d2.y, 2);
+    float err2 = pow(tmp2d2.x, 2) + pow(tmp2d2.y, 2);
+    
+    cout << "err  " <<  (err1 + err2) << endl;
+    
+    mat_tmp_point1.release();
+    mat_tmp_point2.release();
+    if ((err1 + err2) < 2e-08) {
+        inlier = true;
+    }
+    return inlier;
 }
 
 void doTriangulation2Images(vector<cv::KeyPoint> K1,vector<cv::KeyPoint> K2, vector<DMatch> good_matches, cv::Mat img1, cv::Mat img2, cv::Mat P, cv::Mat P_prime)
@@ -499,6 +642,8 @@ void doMulTriangulation(int imgIdx1, int imgIdx2, vector<DMatch> good_matches,  
         
         key1point.clear();
         key2point.clear();
+        vec_key_point_1.clear();
+        vec_key_point_2.clear();
         cv::Mat triangulated_point;
         cv::Mat rgb_value(1,1,CV_8UC3);
         
@@ -518,12 +663,12 @@ void doMulTriangulation(int imgIdx1, int imgIdx2, vector<DMatch> good_matches,  
             Vec3i tmp2 =  src[imgIdx2].at<Vec3b>(key2_p2f);
             rgb_value.at<Vec3b>(0,0) = (tmp1 + tmp2)/2;
 
-            cout << "tmp1" << tmp1 << tmp2 <<  endl;
+          //  cout << "tmp1" << tmp1 << tmp2 <<  endl;
             
             cv::Mat tmp_mat_1 = ((triangulated_point.col(0)).t())/triangulated_point.at<double>(3,0);
             threeD_point_rgb.push_back(rgb_value.at<Vec3b>(0,0));
             
-            cout << "rgb_value.at<Vec3b>(0,0)" << rgb_value.at<Vec3b>(0,0) << endl;
+          //  cout << "rgb_value.at<Vec3b>(0,0)" << rgb_value.at<Vec3b>(0,0) << endl;
             cv::Mat tmpMat = (tmp_mat_1.colRange(0, 3));
             threeD_point_loc.push_back(tmpMat);
             tmpMat.release();
@@ -531,6 +676,9 @@ void doMulTriangulation(int imgIdx1, int imgIdx2, vector<DMatch> good_matches,  
         }else
         {
             cout << "Update Point " << got->second << endl;
+            int point_idx = got->second;
+            
+            
         }
         triangulated_point.release();
         rgb_value.release();
@@ -612,21 +760,37 @@ void computePkUsing3D2D(int imgIdx1, int imgIdx2, vector<DMatch> good_matches, v
     vector<int> inlier_mask;
    // mat_reconstructed_point.convertTo(vec_reconstructed_point, 5);
     solvePnPRansac(vec_reconstructed_point, vec_img2_point, K, noArray(), tmp_R, tmp_T);
-    // float rError = 8.0;
-  // solvePnPRansac(vec_reconstructed_point, vec_img2_point, K, noArray(), tmp_R, tmp_T,false,50, 100, 100,inlier_mask,CV_ITERATIVE);
     Rodrigues(tmp_R,tmp_R,noArray());
     cv::Mat tmp_Pk ;
     hconcat(tmp_R, tmp_T, tmp_Pk);
     //Get Pk
     tmp_Pk.copyTo(*Pk);
+    cout << "tmpPk1" << tmp_Pk << endl;
     tmp_T.release();tmp_R.release();
+    tmp_Pk.release();
     
     //Using Pk to compute Inliers
+    doRansacChooseInlier(vec_reconstructed_point, vec_img2_point, (*Pk), &inlier_mask);
+    vector<Point3f> vec_reconstructed_point2;
+    vector<Point2f> vec_img2_point2;
+    for (int i=0; i<inlier_mask.size(); i++) {
+        vec_reconstructed_point2.push_back(vec_reconstructed_point.at(inlier_mask.at(i)));
+        vec_img2_point2.push_back(vec_img2_point.at(inlier_mask.at(i)));
+    }
+    cv::Mat tmp_T2;//(3,1,CV_64FC1);
+    cv::Mat tmp_R2;//(3,3,CV_64FC1);
+    solvePnPRansac(vec_reconstructed_point2, vec_img2_point2, K, noArray(), tmp_R2, tmp_T2);
+    Rodrigues(tmp_R2,tmp_R2,noArray());
+    hconcat(tmp_R2, tmp_T2, tmp_Pk);
+    cout << "tmpPK2" << tmp_Pk << endl;
+    //Get Pk
+    tmp_Pk.copyTo(*Pk);
+    tmp_T2.release();tmp_R2.release();
+
+
     
     
-    cout << "Pk is " << tmp_Pk << endl;
     
-    doRansacChooseInlier(vec_reconstructed_point, vec_img2_point, (*Pk), inlier_mask);
  //   cout << "Inlier is " << inlier_mask << endl;
     
     //Update 3D point Map
@@ -639,7 +803,7 @@ void computePkUsing3D2D(int imgIdx1, int imgIdx2, vector<DMatch> good_matches, v
     
 }
 
-void doRansacChooseInlier(vector<Point3f> vec_reconstructed_point, vector<Point2f> vec_img2_point, cv::Mat Pk, vector<int> inliers)
+void doRansacChooseInlier(vector<Point3f> vec_reconstructed_point, vector<Point2f> vec_img2_point, cv::Mat Pk, vector<int> *inliers)
 {
     cv::Mat mat_point(4,vec_reconstructed_point.size(),CV_64FC1);
     convertP3ftoMat(vec_reconstructed_point, &mat_point);
@@ -653,11 +817,11 @@ void doRansacChooseInlier(vector<Point3f> vec_reconstructed_point, vector<Point2
     //    cout << "deduce " << (vec_img2_hat.at(i)-vec_img2_point.at(i)) << endl;
         Point2f tmp2f = (vec_img2_hat.at(i)-vec_img2_point.at(i));
         float judge = (tmp2f.x)*(tmp2f.x) + (tmp2f.y)*(tmp2f.y);
-        if (judge < 0.2) {
-            inliers.push_back(i);
-            cout << "judge " << judge << endl;
+        if (judge < 0.1) {
+            (*inliers).push_back(i);
+         //   cout << "judge " << judge << endl;
         }else{
-            cout << "outLiers " << endl;
+        //    cout << "outLiers " << endl;
         }
     }
     mat_point.release();
