@@ -27,7 +27,7 @@ using namespace cv::xfeatures2d;
 float k[3][3] = {{1077.9,0,594.0},{0,1077.9,393.3},{0,0,1}};
 cv::Mat K(3,3,CV_32FC1,k); //Camera Matrix
 cv::Mat Kd(3,3,CV_64FC1,Scalar::all(0));
-const int num_pic = 11;
+const int num_pic = 3;
 cv::Mat src[num_pic], src_gray[num_pic];
 //Initializing Hash Table For correspondence
 vector<std::unordered_map<int, int>> threeD_point2img;
@@ -511,7 +511,7 @@ cv::Mat myMulTriHelper(vector<cv::Mat> inlier_Ps, vector<Point2d> inlier_locs)
     int num = inlier_locs.size();
     
     vector<cv::Mat> ho_point;
-    convertP2DtoMatVec(inlier_locs, &ho_point);
+    convertP2DtoMatVec(inlier_locs, &ho_point); //Location is after NormCoord
     
     vector<cv::Mat> smallA;
     cv::Mat A;
@@ -565,8 +565,8 @@ cv::Mat myMulTriangulation(int pointIdx)
     Point2d rnd_poin[2];
     double error_thresh_hold = 0.02;
     double tmp_err = 0;
-    int most_inliers = 0;
-    int good_p_indx[2];
+    int most_inliers = -1;
+    int good_p_indx[2] = {0,1};
     
     for (int i=0; i<(num_imgs*num_imgs); i++) { //ransac times 100
         int rnd_array[2];
@@ -577,6 +577,7 @@ cv::Mat myMulTriangulation(int pointIdx)
         for (int j=0; j<num_imgs ; j++) {
             if ((j!=rnd_array[0])&&(j!=rnd_array[1])) {
                 tmp_err = computeProjectPointError(rnd_P.at(j), points_loc_2d.at(j), rnd_points_loc);
+                cout << "tmp_err " << tmp_err << endl;
                 if (tmp_err < error_thresh_hold) {
                     tmp_inliers +=1; //Inliers Count
                 }
@@ -593,7 +594,7 @@ cv::Mat myMulTriangulation(int pointIdx)
     vector<cv::Mat> inlier_P;
     vector<Point2d> inlier_locs;
     for (int i=0; i<num_imgs; i++) {
-        tmp_err = computeProjectPointError(rnd_P.at(i), points_loc_2d.at(i), rnd_points_loc);
+        tmp_err = computeProjectPointError(rnd_P.at(i), points_loc_2d.at(i), rnd_points_loc); //Put All inliers, Including Random Array
         if (tmp_err < error_thresh_hold) {
           //  tmp_inliers +=1; //Inliers Count
             inlier_P.push_back(rnd_P.at(i));
@@ -603,6 +604,11 @@ cv::Mat myMulTriangulation(int pointIdx)
     //Do multi Triangulations
     
     cv::Mat mat_reconstructed_point = myMulTriHelper(inlier_P, inlier_locs);
+    //Get 4D location, Now do normalize to put it back to 3D world
+    cv::Mat tmp_3d_coord = (mat_reconstructed_point.rowRange(0, 3))/(mat_reconstructed_point.at<double>(3,0));
+    tmp_3d_coord.copyTo(mat_reconstructed_point);
+    mat_reconstructed_point = mat_reconstructed_point.t();
+    cout << "mat_reconstructed " << mat_reconstructed_point << endl;
     
     return mat_reconstructed_point;
 }
@@ -734,13 +740,14 @@ void doMulTriangulation(int imgIdx1, int imgIdx2, vector<DMatch> good_matches,  
             tmp_mat_1.release();
         }else
         {
-         //   cout << "Update Point " << got->second << endl;
-            
-        /*
+            cout << "Update Point " << got->second << endl;
+            int point_idx = got->second;
+        
             cv::Mat tmp_mat_update = myMulTriangulation(point_idx);
+            cout << "Original 3D point Loc " << threeD_point_loc.at(point_idx) << endl;
             tmp_mat_update.copyTo(threeD_point_loc.at(point_idx));
             tmp_mat_update.release();
-           */
+           
         }
         triangulated_point.release();
         rgb_value.release();
