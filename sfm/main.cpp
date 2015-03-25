@@ -27,7 +27,7 @@ using namespace cv::xfeatures2d;
 float k[3][3] = {{1077.9,0,594.0},{0,1077.9,393.3},{0,0,1}};
 cv::Mat K(3,3,CV_32FC1,k); //Camera Matrix
 cv::Mat Kd(3,3,CV_64FC1,Scalar::all(0));
-const int num_pic = 3;
+const int num_pic = 6;
 cv::Mat src[num_pic], src_gray[num_pic];
 //Initializing Hash Table For correspondence
 vector<std::unordered_map<int, int>> threeD_point2img;
@@ -153,7 +153,7 @@ void siftDetector( int, void* )
     goodMatches(descriptor[0], descriptor[1],&(good_matches[0]),2,0.02);
 
     for (int i=1; i<num_pic; i++) {
-        goodMatches(descriptor[i], descriptor[(i+1)%num_pic],&(good_matches[i]),2,0.02);
+        goodMatches(descriptor[i], descriptor[(i+1)%num_pic],&(good_matches[i]),3,0.02);
     }
     
     //Initializing Projection Mat
@@ -503,7 +503,7 @@ cv::Mat myLinearTriangulation(Point2d vec_point1, Point2d vec_point2,cv::Mat P, 
     cv::Mat w,u,vt;
     SVD::compute(A.t()*A, w, u, vt);
     cv::Mat X_hat((vt.t()).col(3));
-    cout << "Vt " << vt.t().col(3) << endl;
+  //  cout << "Vt " << vt.t().col(3) << endl;
     return X_hat;
 }
 
@@ -521,10 +521,10 @@ cv::Mat myMulTriHelper(vector<cv::Mat> inlier_Ps, vector<Point2d> inlier_locs)
     convertVec2CrossMat_Vec(ho_point, &cross_mat);
 
     for (int i=0; i< num; i++) {
-        cout << "inlier locs " << endl << inlier_locs.at(i) << endl;
-        cout << "ho_point " << endl << ho_point.at(i) << endl;
-        cout << "cross_mat " << endl << cross_mat.at(i) << endl;
-        cout << "inlier P " <<  endl << inlier_Ps.at(i) << endl;
+    //    cout << "inlier locs " << endl << inlier_locs.at(i) << endl;
+    //    cout << "ho_point " << endl << ho_point.at(i) << endl;
+    //    cout << "cross_mat " << endl << cross_mat.at(i) << endl;
+    //    cout << "inlier P " <<  endl << inlier_Ps.at(i) << endl;
         cv::Mat tmp_A = cross_mat.at(i)*(inlier_Ps.at(i));
         smallA.push_back(tmp_A);
     }
@@ -542,7 +542,7 @@ cv::Mat myMulTriHelper(vector<cv::Mat> inlier_Ps, vector<Point2d> inlier_locs)
     cv::Mat w,u,vt;
     SVD::compute(A.t()*A, w, u, vt);
     cv::Mat X_hat((vt.t()).col(3));
-    cout << "Vt " << vt.t().col(3) << endl;
+  //  cout << "Vt " << vt.t().col(3) << endl;
     return X_hat;
 }
 
@@ -586,7 +586,7 @@ cv::Mat myMulTriangulation(int pointIdx)
         for (int j=0; j<num_imgs ; j++) {
             if ((j!=rnd_array[0])&&(j!=rnd_array[1])) {
                 tmp_err = computeProjectPointError(rnd_P.at(j), points_loc_2d.at(j), rnd_points_loc);
-                cout << "tmp_err " << tmp_err << endl;
+            //    cout << "tmp_err " << tmp_err << endl;
                 if (tmp_err < error_thresh_hold) {
                     tmp_inliers +=1; //Inliers Count
                 }
@@ -609,16 +609,25 @@ cv::Mat myMulTriangulation(int pointIdx)
           //  tmp_inliers +=1; //Inliers Count
             inlier_P.push_back(rnd_P.at(i));
             inlier_locs.push_back(points_loc_2d.at(i));
+        } else
+        {
+            cout << "Find outliers Value is" << tmp_err << endl;
         }
     }
     //Do multi Triangulations
+    
+    //Incase Inlierse Smaller Than 2
+/*    if (inlier_locs.size() < 2) {
+        inlier_locs.clear();
+        inlier_P.clear();
+    }*/
     
     cv::Mat mat_reconstructed_point = myMulTriHelper(inlier_P, inlier_locs);
     //Get 4D location, Now do normalize to put it back to 3D world
     cv::Mat tmp_3d_coord = (mat_reconstructed_point.rowRange(0, 3))/(mat_reconstructed_point.at<double>(3,0));
     tmp_3d_coord.copyTo(mat_reconstructed_point);
     mat_reconstructed_point = mat_reconstructed_point.t();
-    cout << "mat_reconstructed " << mat_reconstructed_point << endl;
+   // cout << "mat_reconstructed " << mat_reconstructed_point << endl;
     
     return mat_reconstructed_point;
 }
@@ -754,7 +763,7 @@ void doMulTriangulation(int imgIdx1, int imgIdx2, vector<DMatch> good_matches,  
             int point_idx = got->second;
         
             cv::Mat tmp_mat_update = myMulTriangulation(point_idx);
-            cout << "Original 3D point Loc " << threeD_point_loc.at(point_idx) << endl;
+       //     cout << "Original 3D point Loc " << threeD_point_loc.at(point_idx) << endl;
             tmp_mat_update.copyTo(threeD_point_loc.at(point_idx));
             tmp_mat_update.release();
            
