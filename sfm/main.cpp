@@ -27,7 +27,7 @@ using namespace cv::xfeatures2d;
 float k[3][3] = {{1077.9,0,594.0},{0,1077.9,393.3},{0,0,1}};
 cv::Mat K(3,3,CV_32FC1,k); //Camera Matrix
 cv::Mat Kd(3,3,CV_64FC1,Scalar::all(0));
-const int num_pic = 3;
+const int num_pic = 11;
 cv::Mat src[num_pic], src_gray[num_pic];
 //Initializing Hash Table For correspondence
 vector<std::unordered_map<int, int>> threeD_point2img;
@@ -153,7 +153,7 @@ void siftDetector( int, void* )
     goodMatches(descriptor[0], descriptor[1],&(good_matches[0]),2,0.02);
 
     for (int i=1; i<num_pic; i++) {
-        goodMatches(descriptor[i], descriptor[(i+1)%num_pic],&(good_matches[i]),3,0.02);
+        goodMatches(descriptor[i], descriptor[(i+1)%num_pic],&(good_matches[i]),2,0.02);
     }
     
     //Initializing Projection Mat
@@ -703,9 +703,12 @@ void doMulTriangulation(int imgIdx1, int imgIdx2, vector<DMatch> good_matches,  
         cv::Mat triangulated_point;
         cv::Mat rgb_value(1,1,CV_8UC3);
         
-        if (got == threeD_img2point_map[imgIdx1].end()) { //Not find the point
+       // int point_idx = got->second;
+        
+       // if (got == threeD_img2point_map[imgIdx1].end()) { //Not find the point
             //Triangulate this point using Pk and previous image
-            
+        if (got->second >= threeD_point_loc.size()) { // Already Updated Points
+        
             Point2f key1_p2f = K1.at(querId).pt;
             key1point.push_back(K1.at(querId));
             Point2f key2_p2f = K2.at(trainId).pt;
@@ -731,8 +734,9 @@ void doMulTriangulation(int imgIdx1, int imgIdx2, vector<DMatch> good_matches,  
             tmp_mat_1.release();
         }else
         {
-          /*  cout << "Update Point " << got->second << endl;
-            int point_idx = got->second;
+         //   cout << "Update Point " << got->second << endl;
+            
+        /*
             cv::Mat tmp_mat_update = myMulTriangulation(point_idx);
             tmp_mat_update.copyTo(threeD_point_loc.at(point_idx));
             tmp_mat_update.release();
@@ -828,9 +832,10 @@ void computePkUsing3D2D(int imgIdx1, int imgIdx2, vector<DMatch> good_matches, v
     tmp_Pk.release();
     
     //Using Pk to compute Inliers
-    doRansacChooseInlier(vec_reconstructed_point, vec_img2_point, (*Pk), &inlier_mask);
+ /*   doRansacChooseInlier(vec_reconstructed_point, vec_img2_point, (*Pk), &inlier_mask);
     vector<Point3f> vec_reconstructed_point2;
     vector<Point2f> vec_img2_point2;
+    cout << "inlier_mask.size() " << inlier_mask.size() << endl;
     for (int i=0; i<inlier_mask.size(); i++) {
         vec_reconstructed_point2.push_back(vec_reconstructed_point.at(inlier_mask.at(i)));
         vec_img2_point2.push_back(vec_img2_point.at(inlier_mask.at(i)));
@@ -844,7 +849,8 @@ void computePkUsing3D2D(int imgIdx1, int imgIdx2, vector<DMatch> good_matches, v
     //Get Pk
     tmp_Pk.copyTo(*Pk);
     tmp_T2.release();tmp_R2.release();
-
+ //   inlier_mask.clear();// Clear Inlier, Don't Need
+*/
 
     
     
@@ -855,8 +861,8 @@ void computePkUsing3D2D(int imgIdx1, int imgIdx2, vector<DMatch> good_matches, v
     //computeReconstructPoint(imgIdx1, imgIdx2, good_matches, inlier_mask);
    // doMulTriangulation( imgIdx1,  imgIdx2, good_matches,  K1, K2, inlier_mask);
     
-    doMulTriangulation(imgIdx1 , imgIdx2, good_matches, K1, K2, inlier_mask);
     computeReconstructPoint(imgIdx1, imgIdx2, good_matches, inlier_mask);
+    doMulTriangulation(imgIdx1 , imgIdx2, good_matches, K1, K2, inlier_mask);
 
     
 }
@@ -875,7 +881,7 @@ void doRansacChooseInlier(vector<Point3f> vec_reconstructed_point, vector<Point2
     //    cout << "deduce " << (vec_img2_hat.at(i)-vec_img2_point.at(i)) << endl;
         Point2f tmp2f = (vec_img2_hat.at(i)-vec_img2_point.at(i));
         float judge = (tmp2f.x)*(tmp2f.x) + (tmp2f.y)*(tmp2f.y);
-        if (judge < 0.1) {
+        if (judge < 2) {
             (*inliers).push_back(i);
          //   cout << "judge " << judge << endl;
         }else{
