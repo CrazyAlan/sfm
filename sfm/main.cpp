@@ -327,10 +327,11 @@ void convertP2DtoMatVec(vector<Point2d> point, vector<cv::Mat> *mat_point)
     int num = point.size();
     for (int i=0; i<num; i++) {
         cv::Mat tmp_mat_point(3,1,CV_64FC1);
-        (tmp_mat_point).at<double>(0,i) = point.at(i).x;
-        (tmp_mat_point).at<double>(1,i) = point.at(i).y;
-        (tmp_mat_point).at<double>(2,i) = (double)1.0;
+        (tmp_mat_point).at<double>(0,0) = point.at(i).x;
+        (tmp_mat_point).at<double>(1,0) = point.at(i).y;
+        (tmp_mat_point).at<double>(2,0) = (double)1.0;
         (*mat_point).push_back(tmp_mat_point);
+        tmp_mat_point.release();
     }
 }
 
@@ -520,6 +521,10 @@ cv::Mat myMulTriHelper(vector<cv::Mat> inlier_Ps, vector<Point2d> inlier_locs)
     convertVec2CrossMat_Vec(ho_point, &cross_mat);
 
     for (int i=0; i< num; i++) {
+        cout << "inlier locs " << endl << inlier_locs.at(i) << endl;
+        cout << "ho_point " << endl << ho_point.at(i) << endl;
+        cout << "cross_mat " << endl << cross_mat.at(i) << endl;
+        cout << "inlier P " <<  endl << inlier_Ps.at(i) << endl;
         cv::Mat tmp_A = cross_mat.at(i)*(inlier_Ps.at(i));
         smallA.push_back(tmp_A);
     }
@@ -528,7 +533,11 @@ cv::Mat myMulTriHelper(vector<cv::Mat> inlier_Ps, vector<Point2d> inlier_locs)
     for (int i=2; i<num; i++) {
         //Concat All A
         vconcat(A, smallA.at(i), A);
+     //   cout << "small A (i)" << smallA.at(i) << endl;
+     //   cout << "A is " << A << endl;
     }
+    
+    
     
     cv::Mat w,u,vt;
     SVD::compute(A.t()*A, w, u, vt);
@@ -595,6 +604,7 @@ cv::Mat myMulTriangulation(int pointIdx)
     vector<Point2d> inlier_locs;
     for (int i=0; i<num_imgs; i++) {
         tmp_err = computeProjectPointError(rnd_P.at(i), points_loc_2d.at(i), rnd_points_loc); //Put All inliers, Including Random Array
+      //  cout << "At Final Triangulation " << tmp_err << endl;
         if (tmp_err < error_thresh_hold) {
           //  tmp_inliers +=1; //Inliers Count
             inlier_P.push_back(rnd_P.at(i));
