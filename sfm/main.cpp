@@ -27,7 +27,7 @@ using namespace cv::xfeatures2d;
 float k[3][3] = {{1077.9,0,594.0},{0,1077.9,393.3},{0,0,1}};
 cv::Mat K(3,3,CV_32FC1,k); //Camera Matrix
 cv::Mat Kd(3,3,CV_64FC1,Scalar::all(0));
-const int num_pic = 6;
+const int num_pic = 9;
 cv::Mat src[num_pic], src_gray[num_pic];
 //Initializing Hash Table For correspondence
 vector<std::unordered_map<int, int>> threeD_point2img;
@@ -197,6 +197,7 @@ void siftDetector( int, void* )
     
     myfile.close();
 
+    cout << "Total Points " <<  threeD_point_loc.size() << endl;
 
     
 //    //Draw Sift Keypoints
@@ -572,7 +573,7 @@ cv::Mat myMulTriangulation(int pointIdx)
     int num_imgs = imgs.size();
     
     Point2d rnd_poin[2];
-    double error_thresh_hold = 0.02;
+    double error_thresh_hold = 0.0002;
     double tmp_err = 0;
     int most_inliers = -1;
     int good_p_indx[2] = {0,1};
@@ -616,20 +617,20 @@ cv::Mat myMulTriangulation(int pointIdx)
     }
     //Do multi Triangulations
     
-    //Incase Inlierse Smaller Than 2
-/*    if (inlier_locs.size() < 2) {
-        inlier_locs.clear();
-        inlier_P.clear();
-    }*/
+    //Incase Inlierse Bigger Than 2
+    if (inlier_locs.size() >= 2) {
+        cv::Mat mat_reconstructed_point = myMulTriHelper(inlier_P, inlier_locs);
+        //Get 4D location, Now do normalize to put it back to 3D world
+        cv::Mat tmp_3d_coord = (mat_reconstructed_point.rowRange(0, 3))/(mat_reconstructed_point.at<double>(3,0));
+        tmp_3d_coord.copyTo(mat_reconstructed_point);
+        mat_reconstructed_point = mat_reconstructed_point.t();
+        // cout << "mat_reconstructed " << mat_reconstructed_point << endl;
+        return mat_reconstructed_point;
+    }
+    else {
+        return threeD_point_loc.at(pointIdx); // Return Original Loc
+    }
     
-    cv::Mat mat_reconstructed_point = myMulTriHelper(inlier_P, inlier_locs);
-    //Get 4D location, Now do normalize to put it back to 3D world
-    cv::Mat tmp_3d_coord = (mat_reconstructed_point.rowRange(0, 3))/(mat_reconstructed_point.at<double>(3,0));
-    tmp_3d_coord.copyTo(mat_reconstructed_point);
-    mat_reconstructed_point = mat_reconstructed_point.t();
-   // cout << "mat_reconstructed " << mat_reconstructed_point << endl;
-    
-    return mat_reconstructed_point;
 }
 
 bool ransacTriangulation(cv::Mat P1, cv::Mat P2, vector<Point2d> vec_key_point_1, vector<Point2d> vec_key_point_2, cv::Mat  *triangulated_point)
