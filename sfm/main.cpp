@@ -77,6 +77,9 @@ void convertP2DtoMat(Point2d point, cv::Mat *mat_point);
 void convertP3ftoMat(vector<Point3f> point, cv::Mat *mat_point);
 void convertP2fToP2d(vector<Point2f> src, vector<Point2d> *dst);
 void convertVec2CrossMat(cv::Mat vec_origin, cv::Mat *cross_mat);
+void convertP2DtoMatVec(vector<Point2d> point, vector<cv::Mat> *mat_point);
+void convertVec2CrossMat_Vec(vector<cv::Mat> vec_origin_src, vector<cv::Mat> *cross_mat);
+
 
 double computeProjectPointError(cv::Mat Pk, Point2d point, cv::Mat point_4D);
 cv::Mat myLinearTriangulation(Point2d vec_point1, Point2d vec_point2,cv::Mat P, cv::Mat P_prime);
@@ -319,6 +322,18 @@ cv::Mat findF(vector<cv::KeyPoint> keypoints1,vector<cv::KeyPoint> keypoints2,ve
     return F;
 }
 
+void convertP2DtoMatVec(vector<Point2d> point, vector<cv::Mat> *mat_point)
+{
+    int num = point.size();
+    for (int i=0; i<num; i++) {
+        cv::Mat tmp_mat_point(3,1,CV_64FC1);
+        (tmp_mat_point).at<double>(0,i) = point.at(i).x;
+        (tmp_mat_point).at<double>(1,i) = point.at(i).y;
+        (tmp_mat_point).at<double>(2,i) = (double)1.0;
+        (*mat_point).push_back(tmp_mat_point);
+    }
+}
+
 void convertP2DtoMat(vector<Point2d> point, cv::Mat *mat_point)
 {
     int num = point.size();
@@ -328,6 +343,7 @@ void convertP2DtoMat(vector<Point2d> point, cv::Mat *mat_point)
         (*mat_point).at<double>(2,i) = (double)1.0;
     }
 }
+
 
 void convertP3ftoMat(vector<Point3f> point, cv::Mat *mat_point)
 {
@@ -393,6 +409,23 @@ void convertVec2CrossMat(cv::Mat vec_origin, cv::Mat *cross_mat)
     (*cross_mat).at<double>(1,2) = -1*(vec_origin.at<double>(0,0));//-a1
 
 }
+
+void convertVec2CrossMat_Vec(vector<cv::Mat> vec_origin_src, vector<cv::Mat> *cross_mat)
+{
+    for (int i=0; i<vec_origin_src.size(); i++) {
+        cv::Mat tmp = cv::Mat::zeros(3, 3, CV_64FC1);
+        cv::Mat vec_origin;
+        vec_origin_src.at(i).copyTo(vec_origin);
+        (tmp).at<double>(1,0) = vec_origin.at<double>(0,2);//a3
+        (tmp).at<double>(2,0) = -1*(vec_origin.at<double>(0,1));//-a2
+        (tmp).at<double>(0,1) = -1*(vec_origin.at<double>(0,2));//-a3
+        (tmp).at<double>(2,1) = vec_origin.at<double>(0,0);//a1
+        (tmp).at<double>(0,2) = vec_origin.at<double>(0,1);//a2
+        (tmp).at<double>(1,2) = -1*(vec_origin.at<double>(0,0));//-a1
+        (*cross_mat).push_back(tmp);
+    }
+}
+
 
 
 void drawEpilinesHelper(vector<Point2d> points1, vector<Point2d> points2, cv::Mat F, cv::Mat *img1, cv::Mat *img2)
@@ -473,9 +506,39 @@ cv::Mat myLinearTriangulation(Point2d vec_point1, Point2d vec_point2,cv::Mat P, 
     return X_hat;
 }
 
+cv::Mat myMulTriHelper(vector<cv::Mat> inlier_Ps, vector<Point2d> inlier_locs)
+{
+    int num = inlier_locs.size();
+    
+    vector<cv::Mat> ho_point;
+    convertP2DtoMatVec(inlier_locs, &ho_point);
+    
+    vector<cv::Mat> smallA;
+    cv::Mat A;
+    
+    vector<cv::Mat> cross_mat;
+    convertVec2CrossMat_Vec(ho_point, &cross_mat);
+
+    for (int i=0; i< num; i++) {
+        cv::Mat tmp_A = cross_mat.at(i)*(inlier_Ps.at(i));
+        smallA.push_back(tmp_A);
+    }
+    
+    vconcat(smallA.at(0), smallA.at(1), A);
+    for (int i=2; i<num; i++) {
+        //Concat All A
+        vconcat(A, smallA.at(i), A);
+    }
+    
+    cv::Mat w,u,vt;
+    SVD::compute(A.t()*A, w, u, vt);
+    cv::Mat X_hat((vt.t()).col(3));
+    cout << "Vt " << vt.t().col(3) << endl;
+    return X_hat;
+}
+
 cv::Mat myMulTriangulation(int pointIdx)
 {
-    cv::Mat mat_reconstructed_point;
     
     std::unordered_map<int,int>::iterator got;
     vector<int> imgs;
@@ -525,28 +588,21 @@ cv::Mat myMulTriangulation(int pointIdx)
         }
     }
     
-    cv::Mat ho_point1(3,1,CV_64FC1);
-    cv::Mat ho_point2(3,1,CV_64FC1);
-    //  cout << "vec_point1 " << endl << vec_point1 << endl;
-    //  cout << "ho_point1 " << endl << ho_point1 << endl;
+    //Push All Inliers Together To do Final Triangulation
+    cv::Mat rnd_points_loc = myLinearTriangulation(points_loc_2d.at(good_p_indx[0]), points_loc_2d.at(good_p_indx[1]),rnd_P.at(good_p_indx[0]) , rnd_P.at(good_p_indx[1]));
+    vector<cv::Mat> inlier_P;
+    vector<Point2d> inlier_locs;
+    for (int i=0; i<num_imgs; i++) {
+        tmp_err = computeProjectPointError(rnd_P.at(i), points_loc_2d.at(i), rnd_points_loc);
+        if (tmp_err < error_thresh_hold) {
+          //  tmp_inliers +=1; //Inliers Count
+            inlier_P.push_back(rnd_P.at(i));
+            inlier_locs.push_back(points_loc_2d.at(i));
+        }
+    }
+    //Do multi Triangulations
     
-    convertP2DtoMat(vec_point1,&ho_point1); //3*N
-    convertP2DtoMat(vec_point2, &ho_point2); //3*N
-    cv::Mat A1,A2,A;
-    cv::Mat cross_mat1(3,3,CV_64FC1);
-    cv::Mat cross_mat2(3,3,CV_64FC1);
-    convertVec2CrossMat(ho_point1, &cross_mat1);
-    convertVec2CrossMat(ho_point2, &cross_mat2);
-    
-    // cout << "P is " << endl << P << endl;
-    A1 = cross_mat1*P;
-    A2 = cross_mat2*P_prime;
-    
-    vconcat(A1, A2, A);
-    cv::Mat w,u,vt;
-    SVD::compute(A.t()*A, w, u, vt);
-    cv::Mat X_hat((vt.t()).col(3));
-    cout << "Vt " << vt.t().col(3) << endl;
+    cv::Mat mat_reconstructed_point = myMulTriHelper(inlier_P, inlier_locs);
     
     return mat_reconstructed_point;
 }
@@ -675,10 +731,12 @@ void doMulTriangulation(int imgIdx1, int imgIdx2, vector<DMatch> good_matches,  
             tmp_mat_1.release();
         }else
         {
-            cout << "Update Point " << got->second << endl;
+          /*  cout << "Update Point " << got->second << endl;
             int point_idx = got->second;
-            
-            
+            cv::Mat tmp_mat_update = myMulTriangulation(point_idx);
+            tmp_mat_update.copyTo(threeD_point_loc.at(point_idx));
+            tmp_mat_update.release();
+           */
         }
         triangulated_point.release();
         rgb_value.release();
