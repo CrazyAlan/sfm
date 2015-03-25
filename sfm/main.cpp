@@ -27,7 +27,7 @@ using namespace cv::xfeatures2d;
 float k[3][3] = {{1077.9,0,594.0},{0,1077.9,393.3},{0,0,1}};
 cv::Mat K(3,3,CV_32FC1,k); //Camera Matrix
 cv::Mat Kd(3,3,CV_64FC1,Scalar::all(0));
-const int num_pic = 10;
+const int num_pic = 3;
 cv::Mat src[num_pic], src_gray[num_pic];
 //Initializing Hash Table For correspondence
 vector<std::unordered_map<int, int>> threeD_point2img;
@@ -169,7 +169,7 @@ void siftDetector( int, void* )
 
     }
     
-    cout << "threeDpointsMapsize" << threeD_img2point_map[0].size() << endl;
+    cout << "threeDpointsMapsize img 0" << threeD_img2point_map[0].size() << endl;
     
     cout << "New P2 is " << P[1] << endl;
     
@@ -581,7 +581,7 @@ void computePkUsing3D2D(int imgIdx1, int imgIdx2, vector<DMatch> good_matches, v
    // mat_reconstructed_point.convertTo(vec_reconstructed_point, 5);
     solvePnPRansac(vec_reconstructed_point, vec_img2_point, K, noArray(), tmp_R, tmp_T);
    // float rError = 8.0;
-  //  solvePnPRansac(vec_reconstructed_point, vec_img2_point, K, noArray(), tmp_R, tmp_T,false,100,rError,100);
+  // solvePnPRansac(vec_reconstructed_point, vec_img2_point, K, noArray(), tmp_R, tmp_T,false,50, 100, 100,inlier_mask,CV_ITERATIVE);
     Rodrigues(tmp_R,tmp_R,noArray());
     cv::Mat tmp_Pk ;
     hconcat(tmp_R, tmp_T, tmp_Pk);
