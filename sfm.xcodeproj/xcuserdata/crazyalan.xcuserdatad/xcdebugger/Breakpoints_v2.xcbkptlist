@@ -104,11 +104,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "449001611.389421"
+            timestampString = "449002655.485071"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "970"
-            endingLineNumber = "970"
+            startingLineNumber = "973"
+            endingLineNumber = "973"
             landmarkName = "ransac(vector&lt;DMatch&gt; good_matches, vector&lt;DMatch&gt;* inlier_matches, vector&lt;KeyPoint&gt; keypoint_1, vector&lt;KeyPoint&gt; keypoint_2)"
             landmarkType = "7">
          </BreakpointContent>
@@ -342,11 +342,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "449001611.389421"
+            timestampString = "449002655.485071"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "888"
-            endingLineNumber = "888"
+            startingLineNumber = "890"
+            endingLineNumber = "890"
             landmarkName = "computePkUsing3D2D(int imgIdx1, int imgIdx2, vector&lt;DMatch&gt; good_matches, vector&lt;KeyPoint&gt; K1, vector&lt;KeyPoint&gt; K2, cv::Mat *Pk)"
             landmarkType = "7">
          </BreakpointContent>
@@ -452,11 +452,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "449001611.389421"
+            timestampString = "449002655.485071"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "885"
-            endingLineNumber = "885"
+            startingLineNumber = "887"
+            endingLineNumber = "887"
             landmarkName = "computePkUsing3D2D(int imgIdx1, int imgIdx2, vector&lt;DMatch&gt; good_matches, vector&lt;KeyPoint&gt; K1, vector&lt;KeyPoint&gt; K2, cv::Mat *Pk)"
             landmarkType = "7">
          </BreakpointContent>
@@ -468,11 +468,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "449001611.389421"
+            timestampString = "449002655.485071"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "905"
-            endingLineNumber = "905"
+            startingLineNumber = "908"
+            endingLineNumber = "908"
             landmarkName = "doRansacChooseInlier(vector&lt;Point3f&gt; vec_reconstructed_point, vector&lt;Point2f&gt; vec_img2_point, cv::Mat Pk, vector&lt;int&gt; *inliers)"
             landmarkType = "7">
          </BreakpointContent>
@@ -484,11 +484,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "449001611.389421"
+            timestampString = "449002655.485071"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "901"
-            endingLineNumber = "901"
+            startingLineNumber = "904"
+            endingLineNumber = "904"
             landmarkName = "doRansacChooseInlier(vector&lt;Point3f&gt; vec_reconstructed_point, vector&lt;Point2f&gt; vec_img2_point, cv::Mat Pk, vector&lt;int&gt; *inliers)"
             landmarkType = "7">
          </BreakpointContent>
@@ -660,11 +660,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "449001611.389421"
+            timestampString = "449002655.485071"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "892"
-            endingLineNumber = "892"
+            startingLineNumber = "895"
+            endingLineNumber = "895"
             landmarkName = "computePkUsing3D2D(int imgIdx1, int imgIdx2, vector&lt;DMatch&gt; good_matches, vector&lt;KeyPoint&gt; K1, vector&lt;KeyPoint&gt; K2, cv::Mat *Pk)"
             landmarkType = "7">
          </BreakpointContent>
@@ -852,11 +852,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "sfm/main.cpp"
-            timestampString = "449001611.389421"
+            timestampString = "449002655.485071"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "895"
-            endingLineNumber = "895"
+            startingLineNumber = "898"
+            endingLineNumber = "898"
             landmarkName = "computePkUsing3D2D(int imgIdx1, int imgIdx2, vector&lt;DMatch&gt; good_matches, vector&lt;KeyPoint&gt; K1, vector&lt;KeyPoint&gt; K2, cv::Mat *Pk)"
             landmarkType = "7">
             <Locations>
@@ -867,11 +867,11 @@
                   symbolName = "computePkUsing3D2D(int, int, std::__1::vector&lt;cv::DMatch, std::__1::allocator&lt;cv::DMatch&gt; &gt;, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, cv::Mat*)"
                   moduleName = "sfm"
                   urlString = "file:///Users/crazyalan/GitHub/sfm2/sfm/sfm/main.cpp"
-                  timestampString = "449002046.457295"
+                  timestampString = "449002827.000991"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "895"
-                  endingLineNumber = "895"
+                  startingLineNumber = "898"
+                  endingLineNumber = "898"
                   offsetFromSymbolStart = "1489">
                </Location>
                <Location
@@ -881,11 +881,11 @@
                   symbolName = "computePkUsing3D2D(int, int, std::__1::vector&lt;cv::DMatch, std::__1::allocator&lt;cv::DMatch&gt; &gt;, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, cv::Mat*)"
                   moduleName = "sfm"
                   urlString = "file:///Users/crazyalan/GitHub/sfm2/sfm/sfm/main.cpp"
-                  timestampString = "449002046.457532"
+                  timestampString = "449002827.001285"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "895"
-                  endingLineNumber = "895"
+                  startingLineNumber = "898"
+                  endingLineNumber = "898"
                   offsetFromSymbolStart = "2879">
                </Location>
                <Location
@@ -895,11 +895,11 @@
                   symbolName = "computePkUsing3D2D(int, int, std::__1::vector&lt;cv::DMatch, std::__1::allocator&lt;cv::DMatch&gt; &gt;, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, cv::Mat*)"
                   moduleName = "sfm"
                   urlString = "file:///Users/crazyalan/GitHub/sfm2/sfm/sfm/main.cpp"
-                  timestampString = "449002046.457765"
+                  timestampString = "449002827.001529"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "895"
-                  endingLineNumber = "895"
+                  startingLineNumber = "898"
+                  endingLineNumber = "898"
                   offsetFromSymbolStart = "2894">
                </Location>
                <Location
@@ -909,14 +909,58 @@
                   symbolName = "computePkUsing3D2D(int, int, std::__1::vector&lt;cv::DMatch, std::__1::allocator&lt;cv::DMatch&gt; &gt;, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, cv::Mat*)"
                   moduleName = "sfm"
                   urlString = "file:///Users/crazyalan/GitHub/sfm2/sfm/sfm/main.cpp"
-                  timestampString = "449002046.458006"
+                  timestampString = "449002827.001753"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "895"
-                  endingLineNumber = "895"
-                  offsetFromSymbolStart = "4346">
+                  startingLineNumber = "898"
+                  endingLineNumber = "898"
+                  offsetFromSymbolStart = "5817">
+               </Location>
+               <Location
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "computePkUsing3D2D(int, int, std::__1::vector&lt;cv::DMatch, std::__1::allocator&lt;cv::DMatch&gt; &gt;, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, cv::Mat*)"
+                  moduleName = "sfm"
+                  urlString = "file:///Users/crazyalan/GitHub/sfm2/sfm/sfm/main.cpp"
+                  timestampString = "449002827.001986"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "898"
+                  endingLineNumber = "898"
+                  offsetFromSymbolStart = "7212">
+               </Location>
+               <Location
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "computePkUsing3D2D(int, int, std::__1::vector&lt;cv::DMatch, std::__1::allocator&lt;cv::DMatch&gt; &gt;, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, std::__1::vector&lt;cv::KeyPoint, std::__1::allocator&lt;cv::KeyPoint&gt; &gt;, cv::Mat*)"
+                  moduleName = "sfm"
+                  urlString = "file:///Users/crazyalan/GitHub/sfm2/sfm/sfm/main.cpp"
+                  timestampString = "449002827.00224"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "898"
+                  endingLineNumber = "898"
+                  offsetFromSymbolStart = "7606">
                </Location>
             </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "sfm/main.cpp"
+            timestampString = "449002655.485071"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "894"
+            endingLineNumber = "894"
+            landmarkName = "computePkUsing3D2D(int imgIdx1, int imgIdx2, vector&lt;DMatch&gt; good_matches, vector&lt;KeyPoint&gt; K1, vector&lt;KeyPoint&gt; K2, cv::Mat *Pk)"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

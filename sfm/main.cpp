@@ -27,7 +27,7 @@ using namespace cv::xfeatures2d;
 float k[3][3] = {{1077.9,0,594.0},{0,1077.9,393.3},{0,0,1}};
 cv::Mat K(3,3,CV_32FC1,k); //Camera Matrix
 cv::Mat Kd(3,3,CV_64FC1,Scalar::all(0));
-const int num_pic = 9;
+const int num_pic = 11;
 cv::Mat src[num_pic], src_gray[num_pic];
 //Initializing Hash Table For correspondence
 vector<std::unordered_map<int, int>> threeD_point2img;
@@ -573,7 +573,7 @@ cv::Mat myMulTriangulation(int pointIdx)
     int num_imgs = imgs.size();
     
     Point2d rnd_poin[2];
-    double error_thresh_hold = 0.0002;
+    double error_thresh_hold = 0.02;
     double tmp_err = 0;
     int most_inliers = -1;
     int good_p_indx[2] = {0,1};
@@ -658,7 +658,7 @@ bool ransacTriangulation(cv::Mat P1, cv::Mat P2, vector<Point2d> vec_key_point_1
     
     mat_tmp_point1.release();
     mat_tmp_point2.release();
-    if ((err1 + err2) < 2e-08) {
+    if ((err1 + err2) < 0.02) {
         inlier = true;
     }
     return inlier;
@@ -859,7 +859,7 @@ void computePkUsing3D2D(int imgIdx1, int imgIdx2, vector<DMatch> good_matches, v
     tmp_Pk.release();
     
     //Using Pk to compute Inliers
- /*   doRansacChooseInlier(vec_reconstructed_point, vec_img2_point, (*Pk), &inlier_mask);
+   doRansacChooseInlier(vec_reconstructed_point, vec_img2_point, (*Pk), &inlier_mask);
     vector<Point3f> vec_reconstructed_point2;
     vector<Point2f> vec_img2_point2;
     cout << "inlier_mask.size() " << inlier_mask.size() << endl;
@@ -867,17 +867,19 @@ void computePkUsing3D2D(int imgIdx1, int imgIdx2, vector<DMatch> good_matches, v
         vec_reconstructed_point2.push_back(vec_reconstructed_point.at(inlier_mask.at(i)));
         vec_img2_point2.push_back(vec_img2_point.at(inlier_mask.at(i)));
     }
-    cv::Mat tmp_T2;//(3,1,CV_64FC1);
-    cv::Mat tmp_R2;//(3,3,CV_64FC1);
-    solvePnPRansac(vec_reconstructed_point2, vec_img2_point2, K, noArray(), tmp_R2, tmp_T2);
-    Rodrigues(tmp_R2,tmp_R2,noArray());
-    hconcat(tmp_R2, tmp_T2, tmp_Pk);
-    cout << "tmpPK2" << tmp_Pk << endl;
-    //Get Pk
-    tmp_Pk.copyTo(*Pk);
-    tmp_T2.release();tmp_R2.release();
+    if (inlier_mask.size() > 2) {
+        cv::Mat tmp_T2;//(3,1,CV_64FC1);
+        cv::Mat tmp_R2;//(3,3,CV_64FC1);
+        solvePnPRansac(vec_reconstructed_point2, vec_img2_point2, K, noArray(), tmp_R2, tmp_T2);
+        Rodrigues(tmp_R2,tmp_R2,noArray());
+        hconcat(tmp_R2, tmp_T2, tmp_Pk);
+        cout << "tmpPK2" << tmp_Pk << endl;
+        //Get Pk
+        tmp_Pk.copyTo(*Pk);
+    }
+      //  tmp_T2.release();tmp_R2.release();
  //   inlier_mask.clear();// Clear Inlier, Don't Need
-*/
+
 
     
     
@@ -888,8 +890,9 @@ void computePkUsing3D2D(int imgIdx1, int imgIdx2, vector<DMatch> good_matches, v
     //computeReconstructPoint(imgIdx1, imgIdx2, good_matches, inlier_mask);
    // doMulTriangulation( imgIdx1,  imgIdx2, good_matches,  K1, K2, inlier_mask);
     
-    computeReconstructPoint(imgIdx1, imgIdx2, good_matches, inlier_mask);
-    doMulTriangulation(imgIdx1 , imgIdx2, good_matches, K1, K2, inlier_mask);
+    cv::Mat inlier_vitual;
+    computeReconstructPoint(imgIdx1, imgIdx2, good_matches, inlier_vitual);
+    doMulTriangulation(imgIdx1 , imgIdx2, good_matches, K1, K2, inlier_vitual);
 
     
 }
