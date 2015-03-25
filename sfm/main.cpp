@@ -27,7 +27,7 @@ using namespace cv::xfeatures2d;
 float k[3][3] = {{1077.9,0,594.0},{0,1077.9,393.3},{0,0,1}};
 cv::Mat K(3,3,CV_32FC1,k); //Camera Matrix
 cv::Mat Kd(3,3,CV_64FC1,Scalar::all(0));
-const int num_pic = 3;
+const int num_pic = 10;
 cv::Mat src[num_pic], src_gray[num_pic];
 //Initializing Hash Table For correspondence
 vector<std::unordered_map<int, int>> threeD_point2img;
@@ -164,7 +164,10 @@ void siftDetector( int, void* )
     
     cout << "threeDpointsPointMapsize" << threeD_point2img[0].size() << endl;
     
-    computePkUsing3D2D(1, 2, good_matches[1], keypoints[1], keypoints[2],&P[2]);
+    for (int i=2; i<num_pic; i++) {
+        computePkUsing3D2D(i-1, i, good_matches[i-1], keypoints[i-1], keypoints[i],&P[i]);
+
+    }
     
     cout << "threeDpointsMapsize" << threeD_img2point_map[0].size() << endl;
     
